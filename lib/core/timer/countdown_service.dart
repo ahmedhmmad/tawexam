@@ -30,7 +30,8 @@ class CountdownService {
     required Duration duration,
   }) async {
     _sessionId = sessionId;
-    _remaining = await _restoreRemaining(sessionId) ?? duration;
+    final restored = await _restoreRemaining(sessionId);
+    _remaining = restored == Duration.zero ? duration : restored ?? duration;
     _emit();
     _timer?.cancel();
     _timer = Timer.periodic(_tickInterval, (_) => _tick());
