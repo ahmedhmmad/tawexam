@@ -22,9 +22,17 @@ class AuthTokenStore implements TokenProvider {
     required String accessToken,
     String? refreshToken,
   }) async {
-    await _storage.write(StorageKeys.authBox, StorageKeys.accessToken, accessToken);
+    await _storage.write(
+      StorageKeys.authBox,
+      StorageKeys.accessToken,
+      accessToken,
+    );
     if (refreshToken != null) {
-      await _storage.write(StorageKeys.authBox, StorageKeys.refreshToken, refreshToken);
+      await _storage.write(
+        StorageKeys.authBox,
+        StorageKeys.refreshToken,
+        refreshToken,
+      );
     }
   }
 

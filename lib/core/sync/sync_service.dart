@@ -13,9 +13,9 @@ class SyncService {
     required SyncQueue queue,
     required ConnectivityService connectivityService,
     required Dio dio,
-  })  : _queue = queue,
-        _connectivityService = connectivityService,
-        _dio = dio;
+  }) : _queue = queue,
+       _connectivityService = connectivityService,
+       _dio = dio;
 
   final SyncQueue _queue;
   final ConnectivityService _connectivityService;
@@ -27,8 +27,9 @@ class SyncService {
   Stream<SyncStatus> get status => _status.stream;
 
   Future<void> start() async {
-    _connectivitySubscription ??=
-        _connectivityService.onStatusChanged.listen(_handleConnectivity);
+    _connectivitySubscription ??= _connectivityService.onStatusChanged.listen(
+      _handleConnectivity,
+    );
     if (await _connectivityService.isOnline) {
       await syncPending();
     }

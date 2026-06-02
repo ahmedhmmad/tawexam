@@ -10,6 +10,11 @@ import '../storage/local_storage_service.dart';
 import '../sync/sync_queue.dart';
 import '../sync/sync_service.dart';
 import '../timer/countdown_service.dart';
+import '../../features/auth/data/datasources/auth_remote_datasource.dart';
+import '../../features/auth/data/repositories/auth_repository_impl.dart';
+import '../../features/auth/domain/repositories/auth_repository.dart';
+import '../../features/auth/domain/usecases/login_usecase.dart';
+import '../../features/auth/presentation/cubit/auth_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -25,6 +30,15 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton(() => Connectivity())
     ..registerLazySingleton(() => ConnectivityService(getIt()))
     ..registerLazySingleton(() => SyncQueue(getIt()))
+    ..registerLazySingleton<AuthRemoteDataSource>(
+      () => AuthRemoteDataSourceImpl(getIt<ApiClient>().dio),
+    )
+    ..registerLazySingleton<AuthRepository>(
+      () =>
+          AuthRepositoryImpl(remoteDataSource: getIt(), tokenProvider: getIt()),
+    )
+    ..registerLazySingleton(() => LoginUseCase(getIt()))
+    ..registerFactory(() => AuthCubit(getIt()))
     ..registerLazySingleton(
       () => SyncService(
         queue: getIt(),

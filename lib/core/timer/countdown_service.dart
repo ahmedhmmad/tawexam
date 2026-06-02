@@ -72,7 +72,8 @@ class CountdownService {
 
   void _persistPeriodically() {
     _ticksSincePersist++;
-    if (_ticksSincePersist >= _persistEveryTicks || _remaining == Duration.zero) {
+    if (_ticksSincePersist >= _persistEveryTicks ||
+        _remaining == Duration.zero) {
       _ticksSincePersist = 0;
       unawaited(_persistRemaining());
     }

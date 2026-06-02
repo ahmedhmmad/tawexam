@@ -10,9 +10,9 @@ Failure mapExceptionToFailure(Object error) {
     AuthException() => AuthFailure(error.message, code: error.code),
     StorageException() => StorageFailure(error.message, code: error.code),
     SessionExpiredException() => SessionExpiredFailure(
-        error.message,
-        code: error.code,
-      ),
+      error.message,
+      code: error.code,
+    ),
     ValidationException() => ValidationFailure(error.message, code: error.code),
     ServerException() => ServerFailure(error.message, code: error.code),
     _ => ServerFailure(error.toString()),
@@ -22,7 +22,9 @@ Failure mapExceptionToFailure(Object error) {
 Failure _mapDioException(DioException error) {
   final statusCode = error.response?.statusCode;
   if (statusCode == 401) {
-    return const SessionExpiredFailure('انتهت الجلسة، يرجى تسجيل الدخول مجدداً');
+    return const SessionExpiredFailure(
+      'انتهت الجلسة، يرجى تسجيل الدخول مجدداً',
+    );
   }
   if (statusCode != null && statusCode >= 500) {
     return ServerFailure('حدث خطأ في الخادم', code: '$statusCode');

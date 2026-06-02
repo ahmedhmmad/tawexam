@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/di/service_locator.dart';
+import 'features/auth/presentation/cubit/auth_cubit.dart';
+import 'features/auth/presentation/pages/login_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -9,7 +12,9 @@ Future<void> main() async {
 }
 
 class TawExamApp extends StatelessWidget {
-  const TawExamApp({super.key});
+  const TawExamApp({super.key, this.homeOverride});
+
+  final Widget? homeOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -20,12 +25,14 @@ class TawExamApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E40AF)),
         useMaterial3: true,
       ),
-      home: const Directionality(
-        textDirection: TextDirection.rtl,
-        child: Scaffold(
-          body: Center(child: Text('منصة تدريب امتحان التوجيهي')),
-        ),
-      ),
+      home: homeOverride ?? _buildLoginPage(),
+    );
+  }
+
+  Widget _buildLoginPage() {
+    return BlocProvider(
+      create: (_) => getIt<AuthCubit>(),
+      child: const LoginPage(),
     );
   }
 }

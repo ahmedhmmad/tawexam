@@ -34,7 +34,11 @@ class SyncQueue {
   }
 
   Future<void> clear() {
-    return _storage.write(StorageKeys.syncBox, StorageKeys.syncQueue, <dynamic>[]);
+    return _storage.write(
+      StorageKeys.syncBox,
+      StorageKeys.syncQueue,
+      <dynamic>[],
+    );
   }
 
   SyncTask _mapTask(dynamic value) {
