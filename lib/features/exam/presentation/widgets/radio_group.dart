@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class RadioGroupInherited<T> extends InheritedWidget {
-  const RadioGroupInherited({
+class TawRadioGroupInherited<T> extends InheritedWidget {
+  const TawRadioGroupInherited({
     required this.groupValue,
     required this.onChanged,
     required super.child,
@@ -11,12 +11,12 @@ class RadioGroupInherited<T> extends InheritedWidget {
   final ValueChanged<T?> onChanged;
 
   @override
-  bool updateShouldNotify(RadioGroupInherited<T> old) =>
+  bool updateShouldNotify(TawRadioGroupInherited<T> old) =>
       groupValue != old.groupValue;
 }
 
-class RadioGroup<T> extends StatelessWidget {
-  const RadioGroup({
+class TawRadioGroup<T> extends StatelessWidget {
+  const TawRadioGroup({
     required this.groupValue,
     required this.onChanged,
     required this.child,
@@ -26,11 +26,11 @@ class RadioGroup<T> extends StatelessWidget {
   final ValueChanged<T?> onChanged;
   final Widget child;
 
-  static RadioGroupInherited<T> of<T>(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<RadioGroupInherited<T>>()!;
+  static TawRadioGroupInherited<T> of<T>(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<TawRadioGroupInherited<T>>()!;
 
   @override
-  Widget build(BuildContext context) => RadioGroupInherited<T>(
+  Widget build(BuildContext context) => TawRadioGroupInherited<T>(
         groupValue: groupValue,
         onChanged: onChanged,
         child: child,

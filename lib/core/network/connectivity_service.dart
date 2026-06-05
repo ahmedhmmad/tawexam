@@ -8,7 +8,7 @@ class ConnectivityService {
 
   final Connectivity _connectivity;
   final StreamController<bool> _controller = StreamController<bool>.broadcast();
-  StreamSubscription<List<ConnectivityResult>>? _subscription;
+  StreamSubscription<ConnectivityResult>? _subscription;
 
   Stream<bool> get onStatusChanged => _controller.stream.distinct();
 
@@ -19,8 +19,8 @@ class ConnectivityService {
   }
 
   Future<bool> get isOnline async {
-    final results = await _connectivity.checkConnectivity();
-    return _hasConnection(results.first);
+    final result = await _connectivity.checkConnectivity();
+    return _hasConnection(result);
   }
 
   Future<void> dispose() async {
@@ -28,9 +28,9 @@ class ConnectivityService {
     await _controller.close();
   }
 
-  void _emitStatus(List<ConnectivityResult> results) {
+  void _emitStatus(ConnectivityResult result) {
     if (!_controller.isClosed) {
-      _controller.add(_hasConnection(results.first));
+      _controller.add(_hasConnection(result));
     }
   }
 
