@@ -40,7 +40,7 @@ monitoringService.getNamespace().on("connection", (socket) => {
 });
 
 app.disable("x-powered-by");
-app.enable("trust proxy");
+app.set("trust proxy", 1);
 app.use(requestId);
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGIN === "*" ? true : env.CORS_ORIGIN, credentials: true }));
