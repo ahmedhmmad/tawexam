@@ -12,12 +12,14 @@ class ConnectivityService {
   Stream<bool> get onStatusChanged => _controller.stream.distinct();
 
   Future<void> start() async {
-    _subscription ??= _connectivity.onConnectivityChanged.listen(_emitStatus);
+    _subscription ??=
+        _connectivity.onConnectivityChanged.listen(_emitStatus);
     _emitStatus(await _connectivity.checkConnectivity());
   }
 
   Future<bool> get isOnline async {
-    return _hasConnection(await _connectivity.checkConnectivity());
+    final result = await _connectivity.checkConnectivity();
+    return _hasConnection(result);
   }
 
   Future<void> dispose() async {
@@ -31,7 +33,6 @@ class ConnectivityService {
     }
   }
 
-  bool _hasConnection(ConnectivityResult result) {
-    return result != ConnectivityResult.none;
-  }
+  bool _hasConnection(ConnectivityResult result) =>
+      result != ConnectivityResult.none;
 }

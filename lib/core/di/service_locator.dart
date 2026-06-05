@@ -8,12 +8,31 @@ import '../network/api_client.dart';
 import '../network/auth_interceptor.dart';
 import '../network/auth_token_store.dart';
 import '../network/connectivity_service.dart';
-import '../network/refresh_token_interceptor.dart';
 import '../network/token_provider.dart';
 import '../storage/local_storage_service.dart';
 import '../sync/sync_queue.dart';
 import '../sync/sync_service.dart';
 import '../timer/countdown_service.dart';
+
+// Admin imports
+import '../../features/admin/data/datasources/admin_remote_datasource.dart';
+import '../../features/admin/data/repositories/admin_repository_impl.dart';
+import '../../features/admin/domain/repositories/admin_repository.dart';
+import '../../features/admin/domain/usecases/create_exam_usecase.dart';
+import '../../features/admin/domain/usecases/delete_exam_usecase.dart';
+import '../../features/admin/domain/usecases/download_questions_template_usecase.dart';
+import '../../features/admin/domain/usecases/export_results_usecase.dart';
+import '../../features/admin/domain/usecases/export_students_usecase.dart';
+import '../../features/admin/domain/usecases/get_exams_usecase.dart';
+import '../../features/admin/domain/usecases/get_results_usecase.dart';
+import '../../features/admin/domain/usecases/get_students_usecase.dart';
+import '../../features/admin/domain/usecases/import_students_usecase.dart';
+import '../../features/admin/domain/usecases/update_exam_status_usecase.dart';
+import '../../features/admin/domain/usecases/upload_questions_usecase.dart';
+import '../../features/admin/presentation/cubit/admin_auth_cubit.dart';
+import '../../features/admin/presentation/cubit/admin_exam_cubit.dart';
+import '../../features/admin/presentation/cubit/admin_result_cubit.dart';
+import '../../features/admin/presentation/cubit/admin_student_cubit.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
@@ -45,21 +64,15 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<TokenProvider>(
       () => AuthTokenStore(getIt(), getIt()),
     )
-    ..registerLazySingleton(() => AuthInterceptor(getIt()))
-    ..registerLazySingleton(
-      () => RefreshTokenInterceptor(
-        dio: Dio(
-          BaseOptions(
+    ..registerLazySingleton(() => AuthInterceptor(
+          getIt<TokenProvider>(),
+          authDio: Dio(BaseOptions(
             baseUrl: ApiConfig.baseUrl,
             connectTimeout: ApiConfig.connectTimeout,
             receiveTimeout: ApiConfig.receiveTimeout,
-            sendTimeout: ApiConfig.sendTimeout,
-          ),
-        ),
-        tokenProvider: getIt(),
-      ),
-    )
-    ..registerLazySingleton(() => ApiClient(getIt(), getIt()))
+          )),
+        ))
+    ..registerLazySingleton(() => ApiClient(getIt()))
     ..registerLazySingleton(() => Connectivity())
     ..registerLazySingleton(() => ConnectivityService(getIt()))
     ..registerLazySingleton(() => SyncQueue(getIt()))
@@ -112,6 +125,50 @@ Future<void> configureDependencies() async {
         queue: getIt(),
         connectivityService: getIt(),
         dio: getIt<ApiClient>().dio,
+      ),
+    )
+    // Admin registrations
+    ..registerLazySingleton<AdminRemoteDataSource>(
+      () => AdminRemoteDataSourceImpl(getIt<ApiClient>().dio),
+    )
+    ..registerLazySingleton<AdminRepository>(
+      () => AdminRepositoryImpl(getIt()),
+    )
+    ..registerLazySingleton(() => GetExamsUseCase(getIt()))
+    ..registerLazySingleton(() => CreateExamUseCase(getIt()))
+    ..registerLazySingleton(() => UpdateExamStatusUseCase(getIt()))
+    ..registerLazySingleton(() => DeleteExamUseCase(getIt()))
+    ..registerLazySingleton(() => GetStudentsUseCase(getIt()))
+    ..registerLazySingleton(() => ImportStudentsUseCase(getIt()))
+    ..registerLazySingleton(() => ExportStudentsUseCase(getIt()))
+    ..registerLazySingleton(() => UploadQuestionsUseCase(getIt()))
+    ..registerLazySingleton(() => DownloadQuestionsTemplateUseCase(getIt()))
+    ..registerLazySingleton(() => GetResultsUseCase(getIt()))
+    ..registerLazySingleton(() => ExportResultsUseCase(getIt()))
+    ..registerFactory(
+      () => AdminAuthCubit(tokenProvider: getIt()),
+    )
+    ..registerFactory(
+      () => AdminExamCubit(
+        getExamsUseCase: getIt(),
+        createExamUseCase: getIt(),
+        updateExamStatusUseCase: getIt(),
+        deleteExamUseCase: getIt(),
+        uploadQuestionsUseCase: getIt(),
+        downloadQuestionsTemplateUseCase: getIt(),
+      ),
+    )
+    ..registerFactory(
+      () => AdminStudentCubit(
+        getStudentsUseCase: getIt(),
+        importStudentsUseCase: getIt(),
+        exportStudentsUseCase: getIt(),
+      ),
+    )
+    ..registerFactory(
+      () => AdminResultCubit(
+        getResultsUseCase: getIt(),
+        exportResultsUseCase: getIt(),
       ),
     )
     ..registerSingleton<CountdownService>(CountdownService.instance);

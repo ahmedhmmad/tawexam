@@ -132,7 +132,7 @@ class ExamCubit extends Cubit<ExamState> {
   }
 
   void retryExam() {
-    final ready = _lastSubmittedReady;
+    final ready = _lastSubmittedReady ?? _readyOrNull();
     if (ready == null) return;
     emit(
       ready.copyWith(
