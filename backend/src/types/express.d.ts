@@ -8,6 +8,7 @@ declare global {
         subjectType: "student" | "admin";
         role?: AdminRole;
       };
+      requestId?: string;
     }
   }
 }

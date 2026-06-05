@@ -13,7 +13,10 @@ export const questionCreateSchema = z.object({
       text: z.string().min(1),
       isCorrect: z.boolean()
     })
-  ).min(2).max(4)
+  ).length(4).refine(
+    (choices) => choices.filter((c) => c.isCorrect).length === 1,
+    { message: "Exactly one choice must be marked as correct" }
+  )
 });
 
 export const questionUpdateSchema = questionCreateSchema.partial();

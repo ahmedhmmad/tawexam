@@ -7,12 +7,14 @@ const answersService = new AnswersService();
 
 export class AnswersController {
   async save(req: Request, res: Response): Promise<Response> {
-    const result = await answersService.saveAnswer(req.body);
+    const studentId = req.user?.id;
+    const result = await answersService.saveAnswer(req.body, studentId);
     return sendSuccess(res, result, "Answer saved");
   }
 
   async sync(req: Request, res: Response): Promise<Response> {
-    const result = await answersService.syncAnswers(req.body.answers);
+    const studentId = req.user?.id;
+    const result = await answersService.syncAnswers(req.body.answers, studentId);
     return sendSuccess(res, result, "Answers synced");
   }
 }

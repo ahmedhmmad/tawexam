@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' show pow;
 
 import 'package:dio/dio.dart';
 
@@ -86,7 +87,8 @@ class SyncService {
   }
 
   Duration _retryDelay(int attempts) {
-    return SyncConstants.retryBaseDelay * attempts;
+    final multiplier = pow(2, attempts).toInt();
+    return SyncConstants.retryBaseDelay * multiplier;
   }
 
   void _handleConnectivity(bool isOnline) {

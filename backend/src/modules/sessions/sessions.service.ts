@@ -15,7 +15,7 @@ export class SessionsService {
   async getOrCreateSession(examId: string, studentId: string) {
     const active = await this.repository.findActiveSession(studentId, examId);
     if (active) {
-      return active;
+      return { ...active, serverTime: new Date() };
     }
 
     const exam = await this.examsRepository.findById(examId);
@@ -45,7 +45,7 @@ export class SessionsService {
       studentId: session.studentId
     });
 
-    return session;
+    return { ...session, serverTime: new Date() };
   }
 
   async getStudentSession(examId: string, studentId: string) {
@@ -53,7 +53,7 @@ export class SessionsService {
     if (!session) {
       return this.getOrCreateSession(examId, studentId);
     }
-    return session;
+    return { ...session, serverTime: new Date() };
   }
 
   async extendSession(id: string, additionalSeconds: number) {

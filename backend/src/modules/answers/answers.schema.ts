@@ -7,6 +7,6 @@ export const saveAnswerSchema = z.object({
 });
 
 export const syncAnswersSchema = z.object({
-  answers: z.array(saveAnswerSchema).min(1)
+  answers: z.array(saveAnswerSchema).min(1).max(50)
 });
 

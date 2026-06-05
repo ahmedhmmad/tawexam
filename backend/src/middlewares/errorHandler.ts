@@ -13,21 +13,25 @@ export function errorHandler(
   if (error instanceof ZodError) {
     return res.status(400).json({
       success: false,
-      data: null,
-      message: "Validation failed",
-      errors: error.issues.map((issue) => ({
-        path: issue.path.join("."),
-        message: issue.message
-      }))
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Validation failed",
+        details: error.issues.map((issue) => ({
+          path: issue.path.join("."),
+          message: issue.message
+        }))
+      }
     });
   }
 
   if (error instanceof AppError) {
     return res.status(error.statusCode).json({
       success: false,
-      data: null,
-      message: error.message,
-      errors: error.details ?? []
+      error: {
+        code: error.code,
+        message: error.message,
+        details: error.details ?? undefined
+      }
     });
   }
 
@@ -35,9 +39,10 @@ export function errorHandler(
 
   return res.status(500).json({
     success: false,
-    data: null,
-    message: "Internal server error",
-    errors: []
+    error: {
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Internal server error"
+    }
   });
 }
 

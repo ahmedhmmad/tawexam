@@ -11,10 +11,14 @@ export class AnswersService {
     private readonly sessionsService: SessionsService = new SessionsService()
   ) {}
 
-  async saveAnswer(data: { sessionId: string; questionId: string; choiceId?: string | null }) {
+  async saveAnswer(data: { sessionId: string; questionId: string; choiceId?: string | null }, authenticatedStudentId?: string) {
     const session = await this.sessionsService.expireIfNeeded(data.sessionId);
     if (session.status !== SessionStatus.IN_PROGRESS) {
       throw new AppError("Session is locked", 400, "SESSION_LOCKED");
+    }
+
+    if (authenticatedStudentId && session.studentId !== authenticatedStudentId) {
+      throw new AppError("You do not own this session", 403, "SESSION_OWNERSHIP_DENIED");
     }
 
     const saved = await this.repository.upsertAnswer(data);
@@ -26,11 +30,12 @@ export class AnswersService {
   }
 
   async syncAnswers(
-    items: Array<{ sessionId: string; questionId: string; choiceId?: string | null }>
+    items: Array<{ sessionId: string; questionId: string; choiceId?: string | null }>,
+    authenticatedStudentId?: string
   ) {
     const results = [];
     for (const item of items) {
-      results.push(await this.saveAnswer(item));
+      results.push(await this.saveAnswer(item, authenticatedStudentId));
     }
     return results;
   }

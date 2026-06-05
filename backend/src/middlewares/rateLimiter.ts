@@ -1,3 +1,4 @@
+import type { Request } from "express";
 import rateLimit from "express-rate-limit";
 import { RedisStore } from "rate-limit-redis";
 
@@ -13,7 +14,7 @@ function buildStore(prefix: string) {
 
 export const globalRateLimiter = rateLimit({
   windowMs: 60_000,
-  limit: 200,
+  limit: 100,
   standardHeaders: true,
   legacyHeaders: false,
   store: buildStore("rl:global:")
@@ -24,7 +25,8 @@ export const studentLoginRateLimiter = rateLimit({
   limit: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  store: buildStore("rl:student-login:")
+  store: buildStore("rl:student-login:"),
+  keyGenerator: (req: Request) => (req.body as { seatNumber?: string })?.seatNumber ?? req.ip ?? "unknown"
 });
 
 export const adminLoginRateLimiter = rateLimit({

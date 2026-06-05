@@ -117,18 +117,36 @@ class ExamCubit extends Cubit<ExamState> {
     _lastSubmittedReady = locked;
     emit(ExamSubmitting(locked));
     await _countdownService.pause();
-    final result = await _submitExamUseCase(
-      SubmitExamParams(
-        sessionId: ready.session.id,
-        examId: ready.exam.id,
-        answers: ready.answers,
-        submittedAt: DateTime.now(),
-      ),
-    );
-    result.fold(
-      (failure) => emit(ExamError(failure.message)),
-      (examResult) => emit(ExamSubmitted(examResult)),
-    );
+
+    const maxRetries = 3;
+    for (var attempt = 1; attempt <= maxRetries; attempt++) {
+      final result = await _submitExamUseCase(
+        SubmitExamParams(
+          sessionId: ready.session.id,
+          examId: ready.exam.id,
+          answers: ready.answers,
+          submittedAt: DateTime.now(),
+        ),
+      );
+
+      final success = result.fold<bool>(
+        (failure) {
+          if (attempt == maxRetries) {
+            emit(ExamError(failure.message));
+          }
+          return false;
+        },
+        (examResult) {
+          emit(ExamSubmitted(examResult));
+          return true;
+        },
+      );
+
+      if (success) return;
+      if (attempt < maxRetries) {
+        await Future<void>.delayed(Duration(seconds: attempt * 2));
+      }
+    }
   }
 
   void retryExam() {

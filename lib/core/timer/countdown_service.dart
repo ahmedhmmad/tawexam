@@ -28,10 +28,22 @@ class CountdownService {
   Future<void> start({
     required String sessionId,
     required Duration duration,
+    DateTime? startedAt,
+    DateTime? serverTime,
   }) async {
     _sessionId = sessionId;
     final restored = await _restoreRemaining(sessionId);
-    _remaining = restored == Duration.zero ? duration : restored ?? duration;
+
+    if (restored != null && restored != Duration.zero) {
+      _remaining = restored;
+    } else if (startedAt != null && serverTime != null) {
+      final elapsed = serverTime.difference(startedAt);
+      _remaining = duration - elapsed;
+      if (_remaining.isNegative) _remaining = Duration.zero;
+    } else {
+      _remaining = duration;
+    }
+
     _emit();
     _timer?.cancel();
     _timer = Timer.periodic(_tickInterval, (_) => _tick());

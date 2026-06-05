@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../cubit/exam_state.dart';
+import 'connectivity_indicator.dart';
 import 'exam_time_text.dart';
 
 class ExamHeader extends StatelessWidget {
@@ -18,9 +19,16 @@ class ExamHeader extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              ready.exam.displayName,
-              style: Theme.of(context).textTheme.titleLarge,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    ready.exam.displayName,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                const ConnectivityIndicator(),
+              ],
             ),
             const SizedBox(height: 8),
             Row(

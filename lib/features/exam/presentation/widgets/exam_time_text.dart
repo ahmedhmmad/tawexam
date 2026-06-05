@@ -8,15 +8,25 @@ class ExamTimeText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = _format(remaining);
-    final isLow = remaining.inMinutes < 5;
+    final color = _timerColor(context);
     return Text(
       text,
       textDirection: TextDirection.ltr,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        color: isLow ? Theme.of(context).colorScheme.error : null,
+        color: color,
         fontWeight: FontWeight.w700,
       ),
     );
+  }
+
+  Color? _timerColor(BuildContext context) {
+    if (remaining.inMinutes < 1) {
+      return Theme.of(context).colorScheme.error;
+    }
+    if (remaining.inMinutes < 5) {
+      return Colors.amber.shade800;
+    }
+    return null;
   }
 
   String _format(Duration duration) {

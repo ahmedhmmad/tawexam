@@ -9,6 +9,7 @@ import { Server } from "socket.io";
 import { env } from "./config/env.js";
 import { logger } from "./config/logger.js";
 import { setSocketServer } from "./config/socket.js";
+import { requestId } from "./middlewares/requestId.js";
 import { globalRateLimiter } from "./middlewares/rateLimiter.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { adminAuthRouter, studentAuthRouter } from "./modules/auth/auth.router.js";
@@ -40,10 +41,11 @@ monitoringService.getNamespace().on("connection", (socket) => {
 
 app.disable("x-powered-by");
 app.enable("trust proxy");
+app.use(requestId);
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGIN === "*" ? true : env.CORS_ORIGIN, credentials: true }));
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(morgan("combined", { stream: { write: (message) => logger.info(message.trim()) } }));
 app.use(globalRateLimiter);
 

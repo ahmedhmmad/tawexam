@@ -36,8 +36,10 @@ SRS_GAP_ANALYSIS.md
 /backend/node_modules/
 /backend/dist/
 /backend/.env
+.env
 /backups/
 /letsencrypt/
+/admin-web/
 
 # Symbolication related
 app.*.symbols
@@ -50,3 +52,5 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+DEPLOYMENT.md
+.env.example

@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import { sendSuccess } from "../../utils/api-response.js";
+import { AuditLogService } from "../../utils/audit-log.service.js";
 import { QuestionsService } from "./questions.service.js";
 
 const questionsService = new QuestionsService();
@@ -13,16 +14,36 @@ export class QuestionsController {
 
   async create(req: Request, res: Response): Promise<Response> {
     const question = await questionsService.create(req.params.id as string, req.body);
+    await AuditLogService.log({
+      adminId: req.user!.id,
+      action: "CREATE",
+      targetEntity: "Question",
+      targetId: question.id,
+      payload: { examId: req.params.id, text: req.body.text }
+    });
     return sendSuccess(res, question, "Question created", 201);
   }
 
   async update(req: Request, res: Response): Promise<Response> {
     const question = await questionsService.update(req.params.id as string, req.body);
+    await AuditLogService.log({
+      adminId: req.user!.id,
+      action: "UPDATE",
+      targetEntity: "Question",
+      targetId: req.params.id as string,
+      payload: req.body
+    });
     return sendSuccess(res, question, "Question updated");
   }
 
   async remove(req: Request, res: Response): Promise<Response> {
     await questionsService.delete(req.params.id as string);
+    await AuditLogService.log({
+      adminId: req.user!.id,
+      action: "DELETE",
+      targetEntity: "Question",
+      targetId: req.params.id as string
+    });
     return sendSuccess(res, { deleted: true }, "Question deleted");
   }
 
@@ -37,6 +58,13 @@ export class QuestionsController {
       req.file as Express.Multer.File,
       req.body.mode ?? "append"
     );
+    await AuditLogService.log({
+      adminId: req.user!.id,
+      action: "IMPORT",
+      targetEntity: "Question",
+      targetId: req.params.id as string,
+      payload: { imported: result.imported, errorCount: result.errors.length }
+    });
     return sendSuccess(res, result, "Questions imported");
   }
 
