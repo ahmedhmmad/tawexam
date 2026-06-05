@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import jwt, { type SignOptions } from "jsonwebtoken";
 
 import { env } from "./env.js";
@@ -9,20 +10,13 @@ export interface JwtPayloadBase {
   jti?: string;
 }
 
-// Fix escaped newlines from .env files (Docker Compose passes literal \n)
-function fixKey(key: string): string {
-  return key.replace(/\\n/g, "\n").replace(/§/g, "\n");
-}
-
-function loadKey(envValue: string, fileFallback?: string): string {
-  // If the env value points to an existing file path, read it
+function loadKey(envValue: string): string {
+  // If the env value is a file path (starts with /), read the file
   if (envValue.startsWith("/") && !envValue.includes("BEGIN")) {
-    try {
-      const fs = require("fs");
-      return fs.readFileSync(envValue, "utf8");
-    } catch { /* fall through */ }
+    return readFileSync(envValue, "utf8");
   }
-  return fixKey(envValue);
+  // Otherwise treat as inline key with escaped newlines
+  return envValue.replace(/\\n/g, "\n").replace(/§/g, "\n");
 }
 
 const accessPrivateKey = loadKey(env.JWT_ACCESS_PRIVATE_KEY);
