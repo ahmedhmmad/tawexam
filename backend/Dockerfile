@@ -1,5 +1,7 @@
 FROM node:20-alpine AS builder
 
+RUN apk add --no-cache openssl openssl-dev
+
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
@@ -14,6 +16,8 @@ RUN npm run build
 
 FROM node:20-alpine AS runner
 
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -22,7 +26,6 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY package.json ./
 
-EXPOSE 3000
+EXPOSE 3003
 
 CMD ["node", "dist/app.js"]
-
