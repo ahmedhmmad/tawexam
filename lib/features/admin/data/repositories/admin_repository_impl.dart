@@ -24,9 +24,9 @@ class AdminRepositoryImpl implements AdminRepository {
       return Right(await _remote.createExam({
         'subjectNameAr': p.subjectNameAr,
         'subjectNameEn': p.subjectNameEn,
-        'examDate': p.examDate.toIso8601String(),
-        'startAt': p.startAt.toIso8601String(),
-        'endAt': p.endAt.toIso8601String(),
+        'examDate': p.examDate.toUtc().toIso8601String(),
+        'startAt': p.startAt.toUtc().toIso8601String(),
+        'endAt': p.endAt.toUtc().toIso8601String(),
         'durationMinutes': p.durationMinutes,
         'passingScore': p.passingScore,
         'allowedBranches': p.allowedBranches,
