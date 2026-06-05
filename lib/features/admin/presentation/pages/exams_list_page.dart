@@ -2,10 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/di/service_locator.dart';
 import '../../domain/entities/admin_exam.dart';
 import '../../domain/repositories/admin_repository.dart';
 import '../cubit/exam_manager_cubit.dart';
 import '../cubit/exam_manager_state.dart';
+import '../cubit/question_upload_cubit.dart';
+import 'question_upload_page.dart';
 
 class ExamsListContent extends StatelessWidget {
   const ExamsListContent({super.key});
@@ -104,6 +107,7 @@ class _ExamCard extends StatelessWidget {
         trailing: PopupMenuButton<String>(
           onSelected: (action) => _onAction(context, action),
           itemBuilder: (_) => [
+            const PopupMenuItem(value: 'upload', child: Text('Upload Questions')),
             const PopupMenuItem(value: 'status', child: Text('Change Status')),
             const PopupMenuItem(value: 'delete', child: Text('Delete')),
           ],
@@ -114,7 +118,16 @@ class _ExamCard extends StatelessWidget {
 
   void _onAction(BuildContext context, String action) {
     final cubit = context.read<ExamManagerCubit>();
-    if (action == 'delete') {
+    if (action == 'upload') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (_) => getIt<QuestionUploadCubit>(),
+            child: QuestionUploadPage(examId: exam.id),
+          ),
+        ),
+      );
+    } else if (action == 'delete') {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
