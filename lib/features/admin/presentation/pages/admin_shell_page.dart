@@ -1,6 +1,10 @@
 // lib/features/admin/presentation/pages/admin_shell_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/di/service_locator.dart';
+import '../cubit/exam_manager_cubit.dart';
+import '../cubit/student_manager_cubit.dart';
 import 'exams_list_page.dart';
 import 'students_page.dart';
 
@@ -23,12 +27,6 @@ class _AdminShellPageState extends State<AdminShellPage> {
         icon: Icon(Icons.bar_chart), label: Text('Results')),
   ];
 
-  static const _pages = [
-    ExamsListPage(),
-    StudentsPage(),
-    Center(child: Text('Results')),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -41,9 +39,26 @@ class _AdminShellPageState extends State<AdminShellPage> {
             destinations: _destinations,
           ),
           const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: _pages[_index]),
+          Expanded(child: _buildPage()),
         ],
       ),
     );
+  }
+
+  Widget _buildPage() {
+    switch (_index) {
+      case 0:
+        return BlocProvider(
+          create: (_) => getIt<ExamManagerCubit>()..load(),
+          child: const ExamsListContent(),
+        );
+      case 1:
+        return BlocProvider(
+          create: (_) => getIt<StudentManagerCubit>()..load(),
+          child: const StudentsContent(),
+        );
+      default:
+        return const Center(child: Text('Results — coming soon'));
+    }
   }
 }
