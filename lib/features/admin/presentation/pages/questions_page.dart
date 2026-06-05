@@ -116,12 +116,16 @@ class _QuestionsPageState extends State<QuestionsPage> {
   }
 
   Future<void> _showQuestionDialog(BuildContext context, {Map<String, dynamic>? question}) async {
+    final nextOrder = _questions.isEmpty
+        ? 1
+        : (_questions.map((q) => (q['orderIndex'] as int?) ?? 0).reduce((a, b) => a > b ? a : b)) + 1;
     final result = await showDialog<bool>(
       context: context,
       builder: (_) => _QuestionFormDialog(
         dio: _dio,
         examId: widget.examId,
         question: question,
+        nextOrderIndex: nextOrder,
       ),
     );
     if (result == true) _loadQuestions();
@@ -197,11 +201,12 @@ class _QuestionCard extends StatelessWidget {
 }
 
 class _QuestionFormDialog extends StatefulWidget {
-  const _QuestionFormDialog({required this.dio, required this.examId, this.question});
+  const _QuestionFormDialog({required this.dio, required this.examId, this.question, this.nextOrderIndex = 1});
 
   final Dio dio;
   final String examId;
   final Map<String, dynamic>? question;
+  final int nextOrderIndex;
 
   @override
   State<_QuestionFormDialog> createState() => _QuestionFormDialogState();
@@ -360,7 +365,7 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
       'text': _text.text,
       'difficulty': _difficulty,
       'category': _category.text,
-      'orderIndex': (widget.question?['orderIndex'] as int?) ?? 1,
+      'orderIndex': (widget.question?['orderIndex'] as int?) ?? widget.nextOrderIndex,
       if (_explanation.text.isNotEmpty) 'explanation': _explanation.text,
       'choices': [
         {'label': 'A', 'text': _choiceA.text, 'isCorrect': _correctAnswer == 'A'},
