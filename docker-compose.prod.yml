@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  postgres:
+    restart: always
+
+  redis:
+    restart: always
+
+  backend:
+    restart: always
+    volumes:
+      - backend_uploads:/app/uploads
+
+  nginx:
+    restart: always
+
+volumes:
+  backend_uploads:
+

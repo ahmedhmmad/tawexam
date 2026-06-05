@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  EXAM_MANAGER
+  VIEWER
+}
+
+enum ExamStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum SessionStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+  FORCE_ENDED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model AdminUser {
+  id           String     @id @default(cuid())
+  username     String     @unique
+  passwordHash String
+  role         AdminRole
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  exams        Exam[]
+  auditLogs    AuditLog[]
+}
+
+model Student {
+  id           String        @id @default(cuid())
+  seatNumber   String        @unique
+  fullName     String
+  passwordHash String
+  branch       String
+  schoolName   String
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  sessions     ExamSession[]
+}
+
+model Exam {
+  id              String        @id @default(cuid())
+  subjectNameAr   String
+  subjectNameEn   String
+  examDate        DateTime
+  startAt         DateTime
+  endAt           DateTime
+  durationMinutes Int
+  passingScore    Int
+  allowedBranches String[]
+  maxAttempts     Int           @default(1)
+  status          ExamStatus    @default(DRAFT)
+  instructions    String
+  createdById     String
+  createdAt       DateTime      @default(now())
+  createdBy       AdminUser     @relation(fields: [createdById], references: [id])
+  questions       Question[]
+  sessions        ExamSession[]
+
+  @@index([status, startAt, endAt])
+}
+
+model Question {
+  id         String      @id @default(cuid())
+  examId      String
+  text       String
+  type       String      @default("MCQ")
+  difficulty Difficulty
+  category   String
+  orderIndex Int
+  explanation String?
+  createdAt  DateTime    @default(now())
+  exam       Exam        @relation(fields: [examId], references: [id], onDelete: Cascade)
+  choices    Choice[]
+  answers    Answer[]
+
+  @@unique([examId, orderIndex])
+  @@index([examId, category])
+}
+
+model Choice {
+  id         String    @id @default(cuid())
+  questionId String
+  label      String
+  text       String
+  isCorrect  Boolean   @default(false)
+  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers    Answer[]
+
+  @@unique([questionId, label])
+}
+
+model ExamSession {
+  id               String        @id @default(cuid())
+  studentId        String
+  examId           String
+  attemptNumber    Int           @default(1)
+  startedAt        DateTime      @default(now())
+  expiresAt        DateTime
+  submittedAt      DateTime?
+  remainingSeconds Int
+  status           SessionStatus @default(IN_PROGRESS)
+  student          Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  exam             Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  answers          Answer[]
+  result           ExamResult?
+
+  @@unique([studentId, examId, attemptNumber])
+  @@index([studentId, examId, status])
+}
+
+model Answer {
+  id         String      @id @default(cuid())
+  sessionId   String
+  questionId  String
+  choiceId    String?
+  savedAt    DateTime    @default(now())
+  synced     Boolean     @default(false)
+  session    ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question   Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  choice     Choice?     @relation(fields: [choiceId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, questionId])
+  @@index([sessionId, savedAt])
+}
+
+model ExamResult {
+  id              String      @id @default(cuid())
+  sessionId        String      @unique
+  score           Int
+  totalQuestions  Int
+  answeredCount   Int
+  correctCount    Int
+  timeTakenSeconds Int
+  gradedAt        DateTime    @default(now())
+  session         ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id           String    @id @default(cuid())
+  adminId      String
+  action       String
+  targetEntity String
+  targetId     String
+  payload      Json
+  createdAt    DateTime  @default(now())
+  admin        AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([targetEntity, targetId])
+}
+
