@@ -139,12 +139,17 @@ class _QuestionUploadPageState extends State<QuestionUploadPage> {
         _imported = (data?['imported'] as int?) ?? 0;
       });
     } on DioException catch (e) {
-      final msg = e.response?.data is Map
-          ? (e.response?.data as Map)['error']?['message']?.toString()
-          : e.message;
+      String msg = 'Upload failed';
+      final respData = e.response?.data;
+      if (respData is Map) {
+        final errorMap = respData['error'];
+        if (errorMap is Map) {
+          msg = errorMap['message']?.toString() ?? msg;
+        }
+      }
       setState(() {
         _status = _UploadStatus.error;
-        _message = msg ?? 'Upload failed';
+        _message = msg;
       });
     } catch (e) {
       setState(() {
