@@ -11,13 +11,24 @@ export interface JwtPayloadBase {
 
 // Fix escaped newlines from .env files (Docker Compose passes literal \n)
 function fixKey(key: string): string {
-  return key.replace(/\\n/g, "\n");
+  return key.replace(/\\n/g, "\n").replace(/§/g, "\n");
 }
 
-const accessPrivateKey = fixKey(env.JWT_ACCESS_PRIVATE_KEY);
-const accessPublicKey = fixKey(env.JWT_ACCESS_PUBLIC_KEY);
-const refreshPrivateKey = fixKey(env.JWT_REFRESH_PRIVATE_KEY);
-const refreshPublicKey = fixKey(env.JWT_REFRESH_PUBLIC_KEY);
+function loadKey(envValue: string, fileFallback?: string): string {
+  // If the env value points to an existing file path, read it
+  if (envValue.startsWith("/") && !envValue.includes("BEGIN")) {
+    try {
+      const fs = require("fs");
+      return fs.readFileSync(envValue, "utf8");
+    } catch { /* fall through */ }
+  }
+  return fixKey(envValue);
+}
+
+const accessPrivateKey = loadKey(env.JWT_ACCESS_PRIVATE_KEY);
+const accessPublicKey = loadKey(env.JWT_ACCESS_PUBLIC_KEY);
+const refreshPrivateKey = loadKey(env.JWT_REFRESH_PRIVATE_KEY);
+const refreshPublicKey = loadKey(env.JWT_REFRESH_PUBLIC_KEY);
 
 function commonOptions(expiresIn: string): SignOptions {
   return {

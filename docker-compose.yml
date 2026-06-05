@@ -54,6 +54,7 @@ services:
       - "127.0.0.1:3003:3003"
     volumes:
       - backend_uploads:/app/uploads
+      - ./keys:/keys:ro
     networks:
       - internal
 
