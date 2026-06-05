@@ -13,6 +13,14 @@ class AdminAuthCubit extends Cubit<AdminAuthState> {
   final ApiClient _apiClient;
   final TokenProvider _tokenProvider;
 
+  /// Check if we have a stored token and validate it
+  Future<void> checkSession() async {
+    final token = await _tokenProvider.readAccessToken();
+    if (token != null && token.isNotEmpty) {
+      emit(const AdminAuthSuccess('admin'));
+    }
+  }
+
   Future<void> login({
     required String username,
     required String password,
