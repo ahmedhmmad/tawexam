@@ -1,3 +1,4 @@
+// test/features/exam/save_answer_usecase_test.dart
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -12,7 +13,10 @@ void main() {
   late SaveAnswerUseCase useCase;
 
   const params = SaveAnswerParams(
-    sessionId: 's1', examId: 'e1', questionId: 'q1', answerId: 'a1',
+    sessionId: 's1',
+    examId: 'e1',
+    questionId: 'q1',
+    answerId: 'a1',
   );
 
   setUp(() {
@@ -22,27 +26,30 @@ void main() {
 
   test('delegates to repository.saveAnswer', () async {
     when(() => repo.saveAnswer(
-      sessionId: any(named: 'sessionId'),
-      examId: any(named: 'examId'),
-      questionId: any(named: 'questionId'),
-      answerId: any(named: 'answerId'),
-    )).thenAnswer((_) async => const Right(unit));
+          sessionId: any(named: 'sessionId'),
+          examId: any(named: 'examId'),
+          questionId: any(named: 'questionId'),
+          answerId: any(named: 'answerId'),
+        )).thenAnswer((_) async => const Right(unit));
 
     final result = await useCase(params);
 
     expect(result, const Right<Failure, Unit>(unit));
     verify(() => repo.saveAnswer(
-      sessionId: 's1', examId: 'e1', questionId: 'q1', answerId: 'a1',
-    )).called(1);
+          sessionId: 's1',
+          examId: 'e1',
+          questionId: 'q1',
+          answerId: 'a1',
+        )).called(1);
   });
 
   test('propagates failure from repository', () async {
     when(() => repo.saveAnswer(
-      sessionId: any(named: 'sessionId'),
-      examId: any(named: 'examId'),
-      questionId: any(named: 'questionId'),
-      answerId: any(named: 'answerId'),
-    )).thenAnswer((_) async => const Left(NetworkFailure('offline')));
+          sessionId: any(named: 'sessionId'),
+          examId: any(named: 'examId'),
+          questionId: any(named: 'questionId'),
+          answerId: any(named: 'answerId'),
+        )).thenAnswer((_) async => const Left(NetworkFailure('offline')));
 
     final result = await useCase(params);
 

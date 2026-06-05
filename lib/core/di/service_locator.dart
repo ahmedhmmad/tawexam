@@ -1,3 +1,4 @@
+// lib/core/di/service_locator.dart
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -30,14 +31,19 @@ import '../../features/admin/domain/usecases/import_students_usecase.dart';
 import '../../features/admin/domain/usecases/update_exam_status_usecase.dart';
 import '../../features/admin/domain/usecases/upload_questions_usecase.dart';
 import '../../features/admin/presentation/cubit/admin_auth_cubit.dart';
-import '../../features/admin/presentation/cubit/admin_exam_cubit.dart';
-import '../../features/admin/presentation/cubit/admin_result_cubit.dart';
-import '../../features/admin/presentation/cubit/admin_student_cubit.dart';
+import '../../features/admin/presentation/cubit/exam_manager_cubit.dart';
+import '../../features/admin/presentation/cubit/question_upload_cubit.dart';
+import '../../features/admin/presentation/cubit/student_manager_cubit.dart';
+import '../../features/admin/presentation/cubit/results_cubit.dart';
+
+// Auth imports
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
+
+// Exam imports
 import '../../features/exam/data/datasources/exam_local_datasource.dart';
 import '../../features/exam/data/datasources/exam_remote_datasource.dart';
 import '../../features/exam/data/repositories/exam_repository_impl.dart';
@@ -72,7 +78,7 @@ Future<void> configureDependencies() async {
             receiveTimeout: ApiConfig.receiveTimeout,
           )),
         ))
-    ..registerLazySingleton(() => ApiClient(getIt()))
+    ..registerLazySingleton(() => ApiClient(getIt<AuthInterceptor>()))
     ..registerLazySingleton(() => Connectivity())
     ..registerLazySingleton(() => ConnectivityService(getIt()))
     ..registerLazySingleton(() => SyncQueue(getIt()))
@@ -145,32 +151,23 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton(() => DownloadQuestionsTemplateUseCase(getIt()))
     ..registerLazySingleton(() => GetResultsUseCase(getIt()))
     ..registerLazySingleton(() => ExportResultsUseCase(getIt()))
-    ..registerFactory(
-      () => AdminAuthCubit(tokenProvider: getIt()),
-    )
-    ..registerFactory(
-      () => AdminExamCubit(
-        getExamsUseCase: getIt(),
-        createExamUseCase: getIt(),
-        updateExamStatusUseCase: getIt(),
-        deleteExamUseCase: getIt(),
-        uploadQuestionsUseCase: getIt(),
-        downloadQuestionsTemplateUseCase: getIt(),
-      ),
-    )
-    ..registerFactory(
-      () => AdminStudentCubit(
-        getStudentsUseCase: getIt(),
-        importStudentsUseCase: getIt(),
-        exportStudentsUseCase: getIt(),
-      ),
-    )
-    ..registerFactory(
-      () => AdminResultCubit(
-        getResultsUseCase: getIt(),
-        exportResultsUseCase: getIt(),
-      ),
-    )
+    ..registerFactory(() => AdminAuthCubit(getIt<ApiClient>(), getIt<TokenProvider>()))
+    ..registerFactory(() => ExamManagerCubit(
+          getExams: getIt(),
+          createExam: getIt(),
+          updateStatus: getIt(),
+          deleteExam: getIt(),
+        ))
+    ..registerFactory(() => QuestionUploadCubit(getIt()))
+    ..registerFactory(() => StudentManagerCubit(
+          getStudents: getIt(),
+          importStudents: getIt(),
+          exportStudents: getIt(),
+        ))
+    ..registerFactory(() => ResultsCubit(
+          getResults: getIt(),
+          exportResults: getIt(),
+        ))
     ..registerSingleton<CountdownService>(CountdownService.instance);
 
   getIt<CountdownService>().attachStorage(storage);

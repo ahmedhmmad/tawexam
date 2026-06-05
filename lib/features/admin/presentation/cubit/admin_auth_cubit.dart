@@ -1,25 +1,17 @@
-import 'package:dio/dio.dart';
+// lib/features/admin/presentation/cubit/admin_auth_cubit.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/constants/api_config.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/network/token_provider.dart';
+import '../../../../core/errors/failure_mapper.dart';
 import 'admin_auth_state.dart';
 
 class AdminAuthCubit extends Cubit<AdminAuthState> {
-  AdminAuthCubit({
-    required TokenProvider tokenProvider,
-    Dio? dio,
-  })  : _tokenProvider = tokenProvider,
-        _dio = dio ??
-            Dio(BaseOptions(
-              baseUrl: ApiConfig.baseUrl,
-              connectTimeout: ApiConfig.connectTimeout,
-              receiveTimeout: ApiConfig.receiveTimeout,
-            )),
-        super(const AdminAuthInitial());
+  AdminAuthCubit(this._apiClient, this._tokenProvider)
+      : super(const AdminAuthInitial());
 
+  final ApiClient _apiClient;
   final TokenProvider _tokenProvider;
-  final Dio _dio;
 
   Future<void> login({
     required String username,
@@ -27,27 +19,20 @@ class AdminAuthCubit extends Cubit<AdminAuthState> {
   }) async {
     emit(const AdminAuthLoading());
     try {
-      final response = await _dio.post<Map<String, dynamic>>(
+      final r = await _apiClient.dio.post<Map<String, dynamic>>(
         '/admin/auth/login',
         data: {'username': username, 'password': password},
       );
-      final data = Map<String, dynamic>.from(
-        response.data?['data'] as Map? ?? response.data ?? {},
-      );
-      final accessToken = '${data['accessToken'] ?? ''}';
-      final refreshToken = data['refreshToken']?.toString();
+      final data =
+          Map<String, dynamic>.from(r.data?['data'] as Map? ?? {});
       await _tokenProvider.saveTokens(
-        accessToken: accessToken,
-        refreshToken: refreshToken,
+        accessToken: '${data['accessToken']}',
+        refreshToken: data['refreshToken']?.toString(),
       );
-      emit(AdminAuthSuccess(username));
-    } on DioException catch (e) {
-      final message = (e.response?.data is Map)
-          ? '${(e.response!.data as Map)['message'] ?? 'فشل تسجيل الدخول'}'
-          : 'فشل تسجيل الدخول';
-      emit(AdminAuthFailure(message));
+      emit(AdminAuthSuccess(
+          '${data['user']?['username'] ?? username}'));
     } catch (e) {
-      emit(AdminAuthFailure(e.toString()));
+      emit(AdminAuthFailure(mapExceptionToFailure(e).message));
     }
   }
 

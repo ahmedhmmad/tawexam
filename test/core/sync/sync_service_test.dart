@@ -1,4 +1,6 @@
+// test/core/sync/sync_service_test.dart
 import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -19,7 +21,8 @@ void main() {
   late SyncService service;
 
   final task = SyncTask(
-    id: 't1', endpoint: '/answers',
+    id: 't1',
+    endpoint: '/answers',
     payload: {'questionId': 'q1'},
     createdAt: DateTime.now(),
   );
@@ -30,11 +33,9 @@ void main() {
     queue = MockSyncQueue();
     connectivity = MockConnectivityService();
     dio = MockDio();
-
     when(() => connectivity.onStatusChanged)
         .thenAnswer((_) => const Stream.empty());
     when(() => connectivity.isOnline).thenAnswer((_) async => false);
-
     service = SyncService(
       queue: queue,
       connectivityService: connectivity,
@@ -47,7 +48,8 @@ void main() {
     when(() => queue.enqueue(any())).thenAnswer((_) async {});
     when(() => queue.pendingTasks()).thenAnswer((_) async => [task]);
     when(() => dio.post<dynamic>(any(), data: any(named: 'data')))
-        .thenAnswer((_) async => Response(requestOptions: RequestOptions(), statusCode: 200));
+        .thenAnswer((_) async =>
+            Response(requestOptions: RequestOptions(), statusCode: 200));
     when(() => queue.remove(any())).thenAnswer((_) async {});
 
     await service.start();
@@ -57,12 +59,10 @@ void main() {
   });
 
   test('prevents double run', () async {
-    when(() => connectivity.isOnline).thenAnswer((_) async => false);
+    when(() => connectivity.isOnline).thenAnswer((_) async => true);
     when(() => queue.pendingTasks()).thenAnswer((_) async => []);
 
     await service.start();
-    
-    when(() => connectivity.isOnline).thenAnswer((_) async => true);
     final f1 = service.syncPending();
     final f2 = service.syncPending();
     await Future.wait([f1, f2]);
@@ -71,9 +71,8 @@ void main() {
   });
 
   test('retries on failure and increments attempt count', () async {
-    final failingTask = task;
     when(() => queue.enqueue(any())).thenAnswer((_) async {});
-    when(() => queue.pendingTasks()).thenAnswer((_) async => [failingTask]);
+    when(() => queue.pendingTasks()).thenAnswer((_) async => [task]);
     when(() => dio.post<dynamic>(any(), data: any(named: 'data')))
         .thenThrow(DioException(requestOptions: RequestOptions()));
     when(() => queue.replace(any())).thenAnswer((_) async {});
@@ -82,19 +81,23 @@ void main() {
     final sub = service.status.listen(statuses.add);
 
     await service.syncPending();
-    await sub.cancel();
 
+    await sub.cancel();
     verify(() => queue.replace(any())).called(1);
     expect(statuses, contains(SyncStatus.offline));
   });
 
   test('emits SyncStatus.failed at maxAttempts', () async {
     final maxedTask = SyncTask(
-      id: 't_max', endpoint: '/answers',
-      payload: {}, createdAt: DateTime.now(),
+      id: 't_max',
+      endpoint: '/answers',
+      payload: {},
+      createdAt: DateTime.now(),
       attempts: 4,
     );
-    when(() => queue.pendingTasks()).thenAnswer((_) async => [maxedTask]);
+
+    when(() => queue.pendingTasks())
+        .thenAnswer((_) async => [maxedTask]);
     when(() => dio.post<dynamic>(any(), data: any(named: 'data')))
         .thenThrow(DioException(requestOptions: RequestOptions()));
 
@@ -102,8 +105,8 @@ void main() {
     final sub = service.status.listen(statuses.add);
 
     await service.syncPending();
-    await sub.cancel();
 
+    await sub.cancel();
     expect(statuses, contains(SyncStatus.failed));
   });
 }

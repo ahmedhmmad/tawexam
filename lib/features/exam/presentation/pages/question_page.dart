@@ -5,6 +5,7 @@ import '../cubit/exam_cubit.dart';
 import '../cubit/exam_state.dart';
 import '../widgets/exam_header.dart';
 import '../widgets/question_palette.dart';
+import '../widgets/radio_group.dart';
 import 'review_page.dart';
 
 class QuestionPage extends StatelessWidget {
@@ -168,8 +169,11 @@ class _ChoiceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final group = RadioGroup.of<String>(context);
     return RadioListTile<String>(
       value: optionId,
+      groupValue: group.groupValue,
+      onChanged: isLocked ? null : group.onChanged,
       enabled: !isLocked,
       title: Directionality(
         textDirection: _directionFor(text),

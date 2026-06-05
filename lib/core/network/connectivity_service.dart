@@ -1,3 +1,4 @@
+// lib/core/network/connectivity_service.dart
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -7,7 +8,7 @@ class ConnectivityService {
 
   final Connectivity _connectivity;
   final StreamController<bool> _controller = StreamController<bool>.broadcast();
-  StreamSubscription<ConnectivityResult>? _subscription;
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
 
   Stream<bool> get onStatusChanged => _controller.stream.distinct();
 
@@ -18,8 +19,8 @@ class ConnectivityService {
   }
 
   Future<bool> get isOnline async {
-    final result = await _connectivity.checkConnectivity();
-    return _hasConnection(result);
+    final results = await _connectivity.checkConnectivity();
+    return _hasConnection(results.first);
   }
 
   Future<void> dispose() async {
@@ -27,9 +28,9 @@ class ConnectivityService {
     await _controller.close();
   }
 
-  void _emitStatus(ConnectivityResult result) {
+  void _emitStatus(List<ConnectivityResult> results) {
     if (!_controller.isClosed) {
-      _controller.add(_hasConnection(result));
+      _controller.add(_hasConnection(results.first));
     }
   }
 

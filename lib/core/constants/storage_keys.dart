@@ -13,4 +13,6 @@ class StorageKeys {
   static const activeSessionId = 'active_session_id';
   static const remainingTimePrefix = 'remaining_time_seconds_';
   static const examLockedPrefix = 'exam_locked_';
+  static const adminAccessToken = 'admin_access_token';
+  static const adminRefreshToken = 'admin_refresh_token';
 }

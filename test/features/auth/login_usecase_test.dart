@@ -1,3 +1,4 @@
+// test/features/auth/login_usecase_test.dart
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -14,7 +15,11 @@ void main() {
   late LoginUseCase useCase;
 
   const student = Student(
-    id: '1', seatNumber: 'S001', fullName: 'Test', branch: 'A', schoolName: 'School',
+    id: '1',
+    seatNumber: 'S001',
+    fullName: 'Test',
+    branch: 'A',
+    schoolName: 'School',
   );
   const session = AuthSession(student: student);
 
@@ -27,17 +32,22 @@ void main() {
     when(() => repo.login(seatNumber: 'S001', password: 'pass'))
         .thenAnswer((_) async => const Right(session));
 
-    final result = await useCase(const LoginParams(seatNumber: 'S001', password: 'pass'));
+    final result = await useCase(
+        const LoginParams(seatNumber: 'S001', password: 'pass'));
 
     expect(result, const Right<Failure, AuthSession>(session));
-    verify(() => repo.login(seatNumber: 'S001', password: 'pass')).called(1);
+    verify(() => repo.login(seatNumber: 'S001', password: 'pass'))
+        .called(1);
   });
 
   test('returns AuthFailure on failure', () async {
-    when(() => repo.login(seatNumber: any(named: 'seatNumber'), password: any(named: 'password')))
+    when(() => repo.login(
+            seatNumber: any(named: 'seatNumber'),
+            password: any(named: 'password')))
         .thenAnswer((_) async => const Left(AuthFailure('bad creds')));
 
-    final result = await useCase(const LoginParams(seatNumber: 'X', password: 'y'));
+    final result =
+        await useCase(const LoginParams(seatNumber: 'X', password: 'y'));
 
     expect(result.isLeft(), isTrue);
   });
@@ -46,8 +56,9 @@ void main() {
     when(() => repo.login(seatNumber: 'S001', password: 'pass'))
         .thenAnswer((_) async => const Right(session));
 
-    await useCase(const LoginParams(seatNumber: '  S001  ', password: 'pass'));
+    await useCase(const LoginParams(seatNumber: ' S001 ', password: 'pass'));
 
-    verify(() => repo.login(seatNumber: 'S001', password: 'pass')).called(1);
+    verify(() => repo.login(seatNumber: 'S001', password: 'pass'))
+        .called(1);
   });
 }
