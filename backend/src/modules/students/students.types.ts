@@ -7,11 +7,7 @@ export interface StudentFilters {
 }
 
 export interface StudentImportRow {
-  seatNumber: string;
-  fullName: string;
-  password: string;
-  branch: string;
-  schoolName: string;
-  isActive?: boolean;
+  id: string;
+  name: string;
+  mobile_no: string;
 }
-

@@ -54,7 +54,7 @@ export class StudentsController {
       action: "IMPORT",
       targetEntity: "Student",
       targetId: "bulk",
-      payload: { imported: result.imported, errorCount: result.errors.length }
+      payload: { imported: result.imported, errorCount: result.errors.length, branch }
     });
     return sendSuccess(res, result, "Students imported");
   }

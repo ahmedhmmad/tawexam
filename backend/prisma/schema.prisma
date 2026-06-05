@@ -50,8 +50,9 @@ model Student {
   seatNumber   String        @unique
   fullName     String
   passwordHash String
-  branch       String
-  schoolName   String
+  mobileNo     String        @default("")
+  branch       String        @default("")
+  schoolName   String        @default("")
   isActive     Boolean       @default(true)
   createdAt    DateTime      @default(now())
   sessions     ExamSession[]

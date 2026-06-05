@@ -18,17 +18,19 @@ export class StudentsService {
     seatNumber: string;
     fullName: string;
     password: string;
-    branch: string;
-    schoolName: string;
-    isActive: boolean;
+    mobileNo?: string;
+    branch?: string;
+    schoolName?: string;
+    isActive?: boolean;
   }) {
     return this.repository.create({
       seatNumber: payload.seatNumber,
       fullName: payload.fullName,
       passwordHash: await hashPassword(payload.password),
-      branch: payload.branch,
-      schoolName: payload.schoolName,
-      isActive: payload.isActive
+      mobileNo: payload.mobileNo || "",
+      branch: payload.branch || "",
+      schoolName: payload.schoolName || "",
+      isActive: payload.isActive ?? true
     });
   }
 
@@ -38,6 +40,7 @@ export class StudentsService {
       seatNumber: string;
       fullName: string;
       password: string;
+      mobileNo: string;
       branch: string;
       schoolName: string;
       isActive: boolean;
@@ -61,27 +64,26 @@ export class StudentsService {
     errors: Array<{ rowNumber: number; errors: string[] }>;
   }> {
     ensureXlsxFile(file.originalname, file.mimetype);
-    if (file.size > 5 * 1024 * 1024) {
-      throw new AppError("File exceeds 5MB", 400, "FILE_TOO_LARGE");
+    if (file.size > 10 * 1024 * 1024) {
+      throw new AppError("File exceeds 10MB", 400, "FILE_TOO_LARGE");
     }
 
     const parsed = parseWorkbook(file.buffer, studentImportRowSchema);
     const validRows: StudentImportRow[] = parsed.validRows.map((row) => ({
-      seatNumber: row.seatNumber,
-      fullName: row.fullName,
-      password: row.password,
-      branch: row.branch,
-      schoolName: row.schoolName,
-      isActive: Boolean(row.isActive ?? true)
+      id: String(row.id),
+      name: row.name,
+      mobile_no: String(row.mobile_no)
     }));
+
     const preparedRows = await Promise.all(
       validRows.map(async (row) => ({
-        seatNumber: row.seatNumber,
-        fullName: row.fullName,
-        passwordHash: await hashPassword(row.password),
-        branch: row.branch,
-        schoolName: row.schoolName,
-        isActive: row.isActive ?? true
+        seatNumber: row.id,
+        fullName: row.name,
+        passwordHash: await hashPassword(row.mobile_no),
+        mobileNo: row.mobile_no,
+        branch: "",
+        schoolName: "",
+        isActive: true
       }))
     );
 
@@ -94,10 +96,9 @@ export class StudentsService {
     const workbook = xlsx.utils.book_new();
     const sheet = xlsx.utils.json_to_sheet(
       students.map((student) => ({
-        seatNumber: student.seatNumber,
-        fullName: student.fullName,
-        branch: student.branch,
-        schoolName: student.schoolName,
+        id: student.seatNumber,
+        name: student.fullName,
+        mobile_no: (student as any).mobileNo || "",
         isActive: student.isActive
       }))
     );

@@ -3,14 +3,21 @@ import { z } from "zod";
 export const studentCreateSchema = z.object({
   seatNumber: z.string().min(1),
   fullName: z.string().min(1),
-  password: z.string().min(8),
-  branch: z.string().min(1),
-  schoolName: z.string().min(1),
+  password: z.string().min(1),
+  mobileNo: z.string().default(""),
+  branch: z.string().default(""),
+  schoolName: z.string().default(""),
   isActive: z.boolean().default(true)
 });
 
-export const studentUpdateSchema = studentCreateSchema.partial().extend({
-  password: z.string().min(8).optional()
+export const studentUpdateSchema = z.object({
+  seatNumber: z.string().min(1).optional(),
+  fullName: z.string().min(1).optional(),
+  password: z.string().min(1).optional(),
+  mobileNo: z.string().optional(),
+  branch: z.string().optional(),
+  schoolName: z.string().optional(),
+  isActive: z.boolean().optional()
 });
 
 export const studentQuerySchema = z.object({
@@ -30,18 +37,12 @@ export const studentIdParamsSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
-  password: z.string().min(8).optional()
+  password: z.string().min(1).optional()
 });
 
+// Excel import: columns are id, name, mobile_no
 export const studentImportRowSchema = z.object({
-  seatNumber: z.string().min(1),
-  fullName: z.string().min(1),
-  password: z.string().min(8),
-  branch: z.string().min(1),
-  schoolName: z.string().min(1),
-  isActive: z.preprocess((value) => {
-    if (value === undefined || value === "") return true;
-    if (typeof value === "boolean") return value;
-    return `${value}`.toLowerCase() !== "false";
-  }, z.boolean())
+  id: z.coerce.string().min(1),
+  name: z.string().min(1),
+  mobile_no: z.coerce.string().min(1)
 });

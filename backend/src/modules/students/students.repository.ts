@@ -50,6 +50,7 @@ export class StudentsRepository {
       seatNumber: string;
       fullName: string;
       passwordHash: string;
+      mobileNo: string;
       branch: string;
       schoolName: string;
       isActive: boolean;
@@ -59,7 +60,7 @@ export class StudentsRepository {
       rows.map((row) =>
         prisma.student.upsert({
           where: { seatNumber: row.seatNumber },
-          update: row,
+          update: { fullName: row.fullName, passwordHash: row.passwordHash, mobileNo: row.mobileNo, branch: row.branch, isActive: row.isActive },
           create: row
         })
       )
