@@ -81,7 +81,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _openInstructions(BuildContext context, AuthSuccess state) {
     final examCubit = getIt<ExamCubit>();
-    examCubit.loadForStudent(student: state.student, session: state.session);
+    examCubit.loadForStudent(student: state.student);
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => BlocProvider.value(

@@ -8,6 +8,7 @@
     "strict": true,
     "noUnusedLocals": true,
     "noImplicitAny": true,
+    "isolatedModules": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
@@ -18,4 +19,3 @@
   "include": ["src/**/*.ts", "src/**/*.d.ts"],
   "exclude": ["dist", "node_modules"]
 }
-

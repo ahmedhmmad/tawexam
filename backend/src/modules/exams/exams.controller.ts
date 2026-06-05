@@ -12,12 +12,12 @@ export class ExamsController {
   }
 
   async studentQuestions(req: Request, res: Response): Promise<Response> {
-    const questions = await examsService.studentQuestions(req.params.id, req.user!.id);
+    const questions = await examsService.studentQuestions(req.params.id as string, req.user!.id);
     return sendSuccess(res, questions);
   }
 
   async submit(req: Request, res: Response): Promise<Response> {
-    const result = await examsService.submitExam(req.params.id, req.user!.id);
+    const result = await examsService.submitExam(req.params.id as string, req.user!.id);
     return sendSuccess(res, result, "Exam submitted");
   }
 
@@ -32,23 +32,22 @@ export class ExamsController {
   }
 
   async update(req: Request, res: Response): Promise<Response> {
-    const exam = await examsService.update(req.params.id, req.body);
+    const exam = await examsService.update(req.params.id as string, req.body);
     return sendSuccess(res, exam, "Exam updated");
   }
 
   async remove(req: Request, res: Response): Promise<Response> {
-    await examsService.delete(req.params.id);
+    await examsService.delete(req.params.id as string);
     return sendSuccess(res, { deleted: true }, "Exam deleted");
   }
 
   async duplicate(req: Request, res: Response): Promise<Response> {
-    const exam = await examsService.duplicate(req.params.id, req.user!.id);
+    const exam = await examsService.duplicate(req.params.id as string, req.user!.id);
     return sendSuccess(res, exam, "Exam duplicated", 201);
   }
 
   async updateStatus(req: Request, res: Response): Promise<Response> {
-    const exam = await examsService.updateStatus(req.params.id, req.body.status);
+    const exam = await examsService.updateStatus(req.params.id as string, req.body.status);
     return sendSuccess(res, exam, "Exam status updated");
   }
 }
-

@@ -5,6 +5,7 @@ import '../../../../core/errors/failure_mapper.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/sync/sync_service.dart';
 import '../../../../core/sync/sync_task.dart';
+import '../../../auth/domain/entities/exam_session.dart';
 import '../../domain/entities/exam.dart';
 import '../../domain/entities/exam_result.dart';
 import '../../domain/entities/question.dart';
@@ -33,6 +34,16 @@ class ExamRepositoryImpl implements ExamRepository {
       return Right(exam);
     } catch (error) {
       return _cachedExamOrFailure(error);
+    }
+  }
+
+  @override
+  Future<Either<Failure, ExamSession>> getSession(String examId) async {
+    try {
+      final session = await _remoteDataSource.getSession(examId);
+      return Right(session);
+    } catch (error) {
+      return Left(mapExceptionToFailure(error));
     }
   }
 

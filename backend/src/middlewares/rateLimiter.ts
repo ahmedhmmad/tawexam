@@ -6,7 +6,8 @@ import { redis } from "../config/redis.js";
 function buildStore(prefix: string) {
   return new RedisStore({
     prefix,
-    sendCommand: (...args: string[]) => redis.call(args[0], ...args.slice(1))
+    sendCommand: (...args: string[]) =>
+      redis.call(args[0], ...args.slice(1)) as Promise<any>
   });
 }
 
@@ -33,4 +34,3 @@ export const adminLoginRateLimiter = rateLimit({
   legacyHeaders: false,
   store: buildStore("rl:admin-login:")
 });
-

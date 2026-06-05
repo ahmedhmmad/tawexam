@@ -8,6 +8,7 @@ import '../../../auth/domain/entities/exam_session.dart';
 import '../../../auth/domain/entities/student.dart';
 import '../../domain/entities/exam.dart';
 import '../../domain/usecases/load_exam_usecase.dart';
+import '../../domain/usecases/load_exam_session_usecase.dart';
 import '../../domain/usecases/load_questions_usecase.dart';
 import '../../domain/usecases/restore_exam_progress_usecase.dart';
 import '../../domain/usecases/save_answer_usecase.dart';
@@ -18,6 +19,7 @@ import 'exam_state.dart';
 class ExamCubit extends Cubit<ExamState> {
   ExamCubit({
     required LoadExamUseCase loadExamUseCase,
+    required LoadExamSessionUseCase loadExamSessionUseCase,
     required LoadQuestionsUseCase loadQuestionsUseCase,
     required RestoreExamProgressUseCase restoreProgressUseCase,
     required SaveAnswerUseCase saveAnswerUseCase,
@@ -25,6 +27,7 @@ class ExamCubit extends Cubit<ExamState> {
     required SubmitExamUseCase submitExamUseCase,
     required CountdownService countdownService,
   }) : _loadExamUseCase = loadExamUseCase,
+       _loadExamSessionUseCase = loadExamSessionUseCase,
        _loadQuestionsUseCase = loadQuestionsUseCase,
        _restoreProgressUseCase = restoreProgressUseCase,
        _saveAnswerUseCase = saveAnswerUseCase,
@@ -34,6 +37,7 @@ class ExamCubit extends Cubit<ExamState> {
        super(const ExamInitial());
 
   final LoadExamUseCase _loadExamUseCase;
+  final LoadExamSessionUseCase _loadExamSessionUseCase;
   final LoadQuestionsUseCase _loadQuestionsUseCase;
   final RestoreExamProgressUseCase _restoreProgressUseCase;
   final SaveAnswerUseCase _saveAnswerUseCase;
@@ -43,15 +47,12 @@ class ExamCubit extends Cubit<ExamState> {
   StreamSubscription<Duration>? _timerSubscription;
   ExamReady? _lastSubmittedReady;
 
-  Future<void> loadForStudent({
-    required Student student,
-    required ExamSession session,
-  }) async {
+  Future<void> loadForStudent({required Student student}) async {
     emit(const ExamLoading());
     final examResult = await _loadExamUseCase();
     await examResult.fold(
       (failure) async => emit(ExamError(failure.message)),
-      (exam) => _loadQuestionsAndProgress(student, session, exam),
+      (exam) => _loadSessionQuestionsAndProgress(student, exam),
     );
   }
 
@@ -150,6 +151,17 @@ class ExamCubit extends Cubit<ExamState> {
   Future<void> close() async {
     await _timerSubscription?.cancel();
     return super.close();
+  }
+
+  Future<void> _loadSessionQuestionsAndProgress(
+    Student student,
+    Exam exam,
+  ) async {
+    final sessionResult = await _loadExamSessionUseCase(exam.id);
+    await sessionResult.fold(
+      (failure) async => emit(ExamError(failure.message)),
+      (session) => _loadQuestionsAndProgress(student, session, exam),
+    );
   }
 
   Future<void> _loadQuestionsAndProgress(

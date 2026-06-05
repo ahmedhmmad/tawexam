@@ -1,10 +1,14 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 
+import '../constants/api_config.dart';
 import '../network/api_client.dart';
 import '../network/auth_interceptor.dart';
 import '../network/auth_token_store.dart';
 import '../network/connectivity_service.dart';
+import '../network/refresh_token_interceptor.dart';
 import '../network/token_provider.dart';
 import '../storage/local_storage_service.dart';
 import '../sync/sync_queue.dart';
@@ -18,8 +22,10 @@ import '../../features/auth/presentation/cubit/auth_cubit.dart';
 import '../../features/exam/data/datasources/exam_local_datasource.dart';
 import '../../features/exam/data/datasources/exam_remote_datasource.dart';
 import '../../features/exam/data/repositories/exam_repository_impl.dart';
+import '../../features/exam/domain/repositories/exam_session_repository.dart';
 import '../../features/exam/domain/repositories/exam_repository.dart';
 import '../../features/exam/domain/usecases/load_exam_usecase.dart';
+import '../../features/exam/domain/usecases/load_exam_session_usecase.dart';
 import '../../features/exam/domain/usecases/load_questions_usecase.dart';
 import '../../features/exam/domain/usecases/restore_exam_progress_usecase.dart';
 import '../../features/exam/domain/usecases/save_answer_usecase.dart';
@@ -35,9 +41,25 @@ Future<void> configureDependencies() async {
 
   getIt
     ..registerSingleton<LocalStorageService>(storage)
-    ..registerLazySingleton<TokenProvider>(() => AuthTokenStore(getIt()))
+    ..registerLazySingleton(() => const FlutterSecureStorage())
+    ..registerLazySingleton<TokenProvider>(
+      () => AuthTokenStore(getIt(), getIt()),
+    )
     ..registerLazySingleton(() => AuthInterceptor(getIt()))
-    ..registerLazySingleton(() => ApiClient(getIt()))
+    ..registerLazySingleton(
+      () => RefreshTokenInterceptor(
+        dio: Dio(
+          BaseOptions(
+            baseUrl: ApiConfig.baseUrl,
+            connectTimeout: ApiConfig.connectTimeout,
+            receiveTimeout: ApiConfig.receiveTimeout,
+            sendTimeout: ApiConfig.sendTimeout,
+          ),
+        ),
+        tokenProvider: getIt(),
+      ),
+    )
+    ..registerLazySingleton(() => ApiClient(getIt(), getIt()))
     ..registerLazySingleton(() => Connectivity())
     ..registerLazySingleton(() => ConnectivityService(getIt()))
     ..registerLazySingleton(() => SyncQueue(getIt()))
@@ -63,7 +85,11 @@ Future<void> configureDependencies() async {
         syncService: getIt(),
       ),
     )
+    ..registerLazySingleton<ExamSessionRepository>(
+      () => getIt<ExamRepository>(),
+    )
     ..registerLazySingleton(() => LoadExamUseCase(getIt()))
+    ..registerLazySingleton(() => LoadExamSessionUseCase(getIt()))
     ..registerLazySingleton(() => LoadQuestionsUseCase(getIt()))
     ..registerLazySingleton(() => RestoreExamProgressUseCase(getIt()))
     ..registerLazySingleton(() => SaveAnswerUseCase(getIt()))
@@ -72,6 +98,7 @@ Future<void> configureDependencies() async {
     ..registerFactory(
       () => ExamCubit(
         loadExamUseCase: getIt(),
+        loadExamSessionUseCase: getIt(),
         loadQuestionsUseCase: getIt(),
         restoreProgressUseCase: getIt(),
         saveAnswerUseCase: getIt(),

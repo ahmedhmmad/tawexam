@@ -17,12 +17,12 @@ export class StudentsController {
   }
 
   async update(req: Request, res: Response): Promise<Response> {
-    const student = await studentsService.update(req.params.id, req.body);
+    const student = await studentsService.update(req.params.id as string, req.body);
     return sendSuccess(res, student, "Student updated");
   }
 
   async remove(req: Request, res: Response): Promise<Response> {
-    await studentsService.delete(req.params.id);
+    await studentsService.delete(req.params.id as string);
     return sendSuccess(res, { deleted: true }, "Student deleted");
   }
 
@@ -39,8 +39,7 @@ export class StudentsController {
   }
 
   async resetPassword(req: Request, res: Response): Promise<Response> {
-    const result = await studentsService.resetPassword(req.params.id, req.body.password);
+    const result = await studentsService.resetPassword(req.params.id as string, req.body.password);
     return sendSuccess(res, result, "Password reset");
   }
 }
-

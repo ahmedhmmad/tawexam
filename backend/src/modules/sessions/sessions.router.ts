@@ -16,7 +16,6 @@ studentSessionsRouter.get("/:id/session", validateParams(examIdParamsSchema), as
 
 export const adminSessionsRouter = Router();
 adminSessionsRouter.use(authenticate, requireAdminRole([AdminRole.SUPER_ADMIN, AdminRole.EXAM_MANAGER, AdminRole.VIEWER]));
-adminSessionsRouter.get("/exam/:id", validateParams(examIdParamsSchema), asyncHandler(controller.listByExam));
-adminSessionsRouter.post("/:id/extend", requireAdminRole([AdminRole.SUPER_ADMIN, AdminRole.EXAM_MANAGER]), validateParams(sessionIdParamsSchema), validateBody(extendSessionSchema), asyncHandler(controller.extend));
-adminSessionsRouter.post("/:id/force-end", requireAdminRole([AdminRole.SUPER_ADMIN, AdminRole.EXAM_MANAGER]), validateParams(sessionIdParamsSchema), asyncHandler(controller.forceEnd));
-
+adminSessionsRouter.get("/exams/:id/sessions", validateParams(examIdParamsSchema), asyncHandler(controller.listByExam));
+adminSessionsRouter.post("/sessions/:id/extend", requireAdminRole([AdminRole.SUPER_ADMIN, AdminRole.EXAM_MANAGER]), validateParams(sessionIdParamsSchema), validateBody(extendSessionSchema), asyncHandler(controller.extend));
+adminSessionsRouter.post("/sessions/:id/force-end", requireAdminRole([AdminRole.SUPER_ADMIN, AdminRole.EXAM_MANAGER]), validateParams(sessionIdParamsSchema), asyncHandler(controller.forceEnd));

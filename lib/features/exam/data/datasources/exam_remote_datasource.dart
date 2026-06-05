@@ -1,11 +1,14 @@
 import 'package:dio/dio.dart';
 
+import '../../../auth/data/models/exam_session_model.dart';
 import '../models/exam_model.dart';
 import '../models/exam_result_model.dart';
 import '../models/question_model.dart';
 
 abstract interface class ExamRemoteDataSource {
   Future<ExamModel> getCurrentExam();
+
+  Future<ExamSessionModel> getSession(String examId);
 
   Future<List<QuestionModel>> getQuestions(String examId);
 
@@ -26,6 +29,14 @@ class ExamRemoteDataSourceImpl implements ExamRemoteDataSource {
   Future<ExamModel> getCurrentExam() async {
     final response = await _dio.get<Map<String, dynamic>>('/exam/current');
     return ExamModel.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<ExamSessionModel> getSession(String examId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/exam/$examId/session',
+    );
+    return ExamSessionModel.fromJson(response.data ?? const {});
   }
 
   @override

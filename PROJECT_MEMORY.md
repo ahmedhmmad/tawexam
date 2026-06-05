@@ -25,24 +25,46 @@
 
 ## In Progress
 
-- Add backend monorepo structure under `backend/`
-- Add Docker, Nginx, server setup, deploy, backup, and root env files
-- Add Prisma schema and backend core bootstrapping
-- Implement backend auth, students, exams, questions, answers, sessions, results, and monitoring
-- Update Flutter only where the new backend contract changed prior work
+- Deepen backend tests beyond smoke coverage
+- Add richer Prisma-backed repository mocking for service/controller tests
+- Continue Flutter migration in Phase 6 for full refresh/logout UX and admin live monitoring client
 
 ## Known Deviations
 
 - Repo does not yet match the requested `mobile/` directory layout.
 - Existing Flutter app remains in the repo root temporarily.
-- Backend verification will depend on installing Node dependencies and Prisma client generation.
+- Backend Jest currently uses `--forceExit` because ESM test imports still leave open handles in this setup.
+- Student result endpoint now follows the secure backend contract and does not expose per-question correct answers.
+
+## Completed In This Turn
+
+- Added root infra and ops files:
+  `docker-compose.yml`, `docker-compose.prod.yml`, `nginx/`, `scripts/`, `.env.example`, `Makefile`
+- Added backend Node.js + Express + TypeScript project under `backend/`
+- Added Prisma schema and seed file for PostgreSQL 16
+- Added backend config, logger, JWT, Redis, middleware, and app bootstrap
+- Implemented backend modules:
+  `auth`, `students`, `exams`, `questions`, `answers`, `sessions`, `results`, `monitoring`
+- Added backend Jest configuration and baseline module tests
+- Verified backend with:
+  `npm run build`
+  `npm test`
+- Applied Flutter contract updates required by the backend change:
+  `API_BASE_URL` env config
+  secure token storage via `flutter_secure_storage`
+  refresh-token interceptor with one retry on `401`
+  student login endpoint changed to `/auth/student/login`
+  session creation moved from login flow to `GET /exam/:id/session`
+- Verified Flutter with:
+  `flutter analyze`
+  `flutter test`
 
 ## Next Work Items
 
-- Finish backend infrastructure and module wiring
-- Add Jest and Supertest coverage for critical flows
-- Update Flutter auth/network/token handling for refresh token support
-- Add admin live monitoring client integration in Flutter Web phase later
+- Add real integration tests with Supertest and mocked Prisma repositories
+- Build the admin client in Phase 6
+- Add Flutter logout flow and explicit expired-session UX
+- Revisit full monorepo relocation if you want the Flutter app physically moved into `mobile/`
 
 ## Relevant Contracts
 

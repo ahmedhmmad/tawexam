@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-import '../../domain/entities/exam_session.dart';
 import '../../domain/entities/student.dart';
 
 sealed class AuthState extends Equatable {
@@ -19,13 +18,12 @@ class AuthLoading extends AuthState {
 }
 
 class AuthSuccess extends AuthState {
-  const AuthSuccess({required this.student, required this.session});
+  const AuthSuccess({required this.student});
 
   final Student student;
-  final ExamSession session;
 
   @override
-  List<Object?> get props => [student, session];
+  List<Object?> get props => [student];
 }
 
 class AuthFailure extends AuthState {

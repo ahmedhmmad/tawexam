@@ -59,7 +59,7 @@ app.use(`${env.API_PREFIX}/exam`, studentResultsRouter);
 app.use(`${env.API_PREFIX}/admin/exams`, adminExamsRouter);
 app.use(`${env.API_PREFIX}/admin`, questionsRouter);
 app.use(`${env.API_PREFIX}/admin/exams`, adminResultsRouter);
-app.use(`${env.API_PREFIX}/admin/sessions`, adminSessionsRouter);
+app.use(`${env.API_PREFIX}/admin`, adminSessionsRouter);
 app.use(`${env.API_PREFIX}/admin/monitoring`, monitoringRouter);
 
 app.use((_req, _res, next) => {
@@ -71,4 +71,3 @@ app.use(errorHandler);
 server.listen(env.PORT, () => {
   logger.info(`${env.APP_NAME} listening on port ${env.PORT}`);
 });
-

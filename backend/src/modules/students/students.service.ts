@@ -66,8 +66,16 @@ export class StudentsService {
     }
 
     const parsed = parseWorkbook(file.buffer, studentImportRowSchema);
+    const validRows: StudentImportRow[] = parsed.validRows.map((row) => ({
+      seatNumber: row.seatNumber,
+      fullName: row.fullName,
+      password: row.password,
+      branch: row.branch,
+      schoolName: row.schoolName,
+      isActive: Boolean(row.isActive ?? true)
+    }));
     const preparedRows = await Promise.all(
-      parsed.validRows.map(async (row) => ({
+      validRows.map(async (row) => ({
         seatNumber: row.seatNumber,
         fullName: row.fullName,
         passwordHash: await hashPassword(row.password),
@@ -78,7 +86,7 @@ export class StudentsService {
     );
 
     const imported = preparedRows.length > 0 ? await this.repository.upsertMany(preparedRows) : 0;
-    return { imported, validRows: parsed.validRows, errors: parsed.errors };
+    return { imported, validRows, errors: parsed.errors };
   }
 
   async exportWorkbook(): Promise<Buffer> {
@@ -105,4 +113,3 @@ export class StudentsService {
     return { password: generated };
   }
 }
-

@@ -2,14 +2,12 @@ import { SessionStatus } from "@prisma/client";
 
 import { AppError } from "../../utils/app-error.js";
 import { monitoringService } from "../monitoring/monitoring.controller.js";
-import { SessionsRepository } from "../sessions/sessions.repository.js";
 import { SessionsService } from "../sessions/sessions.service.js";
 import { AnswersRepository } from "./answers.repository.js";
 
 export class AnswersService {
   constructor(
     private readonly repository: AnswersRepository = new AnswersRepository(),
-    private readonly sessionsRepository: SessionsRepository = new SessionsRepository(),
     private readonly sessionsService: SessionsService = new SessionsService()
   ) {}
 
@@ -37,4 +35,3 @@ export class AnswersService {
     return results;
   }
 }
-

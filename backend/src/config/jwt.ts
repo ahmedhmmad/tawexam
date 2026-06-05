@@ -12,7 +12,7 @@ export interface JwtPayloadBase {
 function commonOptions(expiresIn: string): SignOptions {
   return {
     algorithm: "RS256",
-    expiresIn,
+    expiresIn: expiresIn as SignOptions["expiresIn"],
     issuer: env.JWT_ISSUER,
     audience: env.JWT_AUDIENCE
   };
@@ -41,4 +41,3 @@ export function verifyRefreshToken(token: string): JwtPayloadBase {
     audience: env.JWT_AUDIENCE
   }) as JwtPayloadBase;
 }
-

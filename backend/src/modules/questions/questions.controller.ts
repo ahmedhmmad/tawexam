@@ -7,22 +7,22 @@ const questionsService = new QuestionsService();
 
 export class QuestionsController {
   async list(req: Request, res: Response): Promise<Response> {
-    const questions = await questionsService.listByExam(req.params.id);
+    const questions = await questionsService.listByExam(req.params.id as string);
     return sendSuccess(res, questions);
   }
 
   async create(req: Request, res: Response): Promise<Response> {
-    const question = await questionsService.create(req.params.id, req.body);
+    const question = await questionsService.create(req.params.id as string, req.body);
     return sendSuccess(res, question, "Question created", 201);
   }
 
   async update(req: Request, res: Response): Promise<Response> {
-    const question = await questionsService.update(req.params.id, req.body);
+    const question = await questionsService.update(req.params.id as string, req.body);
     return sendSuccess(res, question, "Question updated");
   }
 
   async remove(req: Request, res: Response): Promise<Response> {
-    await questionsService.delete(req.params.id);
+    await questionsService.delete(req.params.id as string);
     return sendSuccess(res, { deleted: true }, "Question deleted");
   }
 
@@ -33,7 +33,7 @@ export class QuestionsController {
 
   async importQuestions(req: Request, res: Response): Promise<Response> {
     const result = await questionsService.importWorkbook(
-      req.params.id,
+      req.params.id as string,
       req.file as Express.Multer.File,
       req.body.mode ?? "append"
     );
@@ -47,4 +47,3 @@ export class QuestionsController {
     return res.status(200).send(buffer);
   }
 }
-

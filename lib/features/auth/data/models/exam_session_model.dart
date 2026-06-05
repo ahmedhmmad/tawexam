@@ -13,15 +13,26 @@ class ExamSessionModel extends ExamSession {
     return ExamSessionModel(
       id: '${json['id'] ?? json['sessionId']}',
       examId: '${json['examId'] ?? json['exam_id']}',
-      duration: Duration(minutes: _readInt(json, 'durationMinutes')),
+      duration: Duration(
+        minutes: _readInt(
+          json,
+          'durationMinutes',
+          fallbackKey: 'duration_minutes',
+        ),
+      ),
       startedAt: _readDate(json['startedAt'] ?? json['started_at']),
       serverTime: _readDate(json['serverTime'] ?? json['server_time']),
     );
   }
 
-  static int _readInt(Map<String, dynamic> json, String key) {
-    final value = json[key] ?? json['duration_minutes'];
-    return value is int ? value : int.parse('$value');
+  static int _readInt(
+    Map<String, dynamic> json,
+    String key, {
+    String? fallbackKey,
+  }) {
+    final value = json[key] ?? (fallbackKey == null ? null : json[fallbackKey]);
+    if (value == null) return 0;
+    return value is int ? value : int.tryParse('$value') ?? 0;
   }
 
   static DateTime _readDate(Object? value) {

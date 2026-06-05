@@ -7,6 +7,8 @@ class StorageKeys {
   static const settingsBox = 'settings_box';
   static const accessToken = 'access_token';
   static const refreshToken = 'refresh_token';
+  static const secureAccessToken = 'secure_access_token';
+  static const secureRefreshToken = 'secure_refresh_token';
   static const syncQueue = 'sync_queue';
   static const activeSessionId = 'active_session_id';
   static const remainingTimePrefix = 'remaining_time_seconds_';

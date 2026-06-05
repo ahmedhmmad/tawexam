@@ -18,7 +18,11 @@ export const studentQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(20),
   search: z.string().optional(),
   branch: z.string().optional(),
-  isActive: z.coerce.boolean().optional()
+  isActive: z.preprocess((value) => {
+    if (value === undefined || value === "") return undefined;
+    if (typeof value === "boolean") return value;
+    return `${value}`.toLowerCase() === "true";
+  }, z.boolean().optional())
 });
 
 export const studentIdParamsSchema = z.object({
@@ -35,9 +39,9 @@ export const studentImportRowSchema = z.object({
   password: z.string().min(8),
   branch: z.string().min(1),
   schoolName: z.string().min(1),
-  isActive: z.union([z.boolean(), z.string()]).optional().transform((value) => {
+  isActive: z.preprocess((value) => {
+    if (value === undefined || value === "") return true;
     if (typeof value === "boolean") return value;
-    return value === undefined ? true : value.toLowerCase() !== "false";
-  })
+    return `${value}`.toLowerCase() !== "false";
+  }, z.boolean())
 });
-

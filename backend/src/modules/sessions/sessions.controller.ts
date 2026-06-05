@@ -7,23 +7,22 @@ const sessionsService = new SessionsService();
 
 export class SessionsController {
   async getStudentSession(req: Request, res: Response): Promise<Response> {
-    const session = await sessionsService.getStudentSession(req.params.id, req.user!.id);
+    const session = await sessionsService.getStudentSession(req.params.id as string, req.user!.id);
     return sendSuccess(res, session);
   }
 
   async extend(req: Request, res: Response): Promise<Response> {
-    const session = await sessionsService.extendSession(req.params.id, req.body.additionalSeconds);
+    const session = await sessionsService.extendSession(req.params.id as string, req.body.additionalSeconds);
     return sendSuccess(res, session, "Session extended");
   }
 
   async forceEnd(req: Request, res: Response): Promise<Response> {
-    const session = await sessionsService.forceEndSession(req.params.id);
+    const session = await sessionsService.forceEndSession(req.params.id as string);
     return sendSuccess(res, session, "Session force ended");
   }
 
   async listByExam(req: Request, res: Response): Promise<Response> {
-    const sessions = await sessionsService.listExamSessions(req.params.id);
+    const sessions = await sessionsService.listExamSessions(req.params.id as string);
     return sendSuccess(res, sessions);
   }
 }
-

@@ -4,8 +4,9 @@ import '../../../../core/errors/failures.dart';
 import '../entities/exam.dart';
 import '../entities/exam_result.dart';
 import '../entities/question.dart';
+import 'exam_session_repository.dart';
 
-abstract interface class ExamRepository {
+abstract interface class ExamRepository implements ExamSessionRepository {
   Future<Either<Failure, Exam>> getCurrentExam();
 
   Future<Either<Failure, List<Question>>> getQuestions(String examId);

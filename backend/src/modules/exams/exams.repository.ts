@@ -67,7 +67,7 @@ export class ExamsRepository {
   }
 
   findStudentById(studentId: string) {
-    return prisma.student.findUnique({ where: { id } });
+    return prisma.student.findUnique({ where: { id: studentId } });
   }
 
   async duplicate(id: string, adminId: string) {
@@ -132,4 +132,3 @@ export class ExamsRepository {
     });
   }
 }
-

@@ -1,14 +1,12 @@
 import 'package:equatable/equatable.dart';
 
-import 'exam_session.dart';
 import 'student.dart';
 
 class AuthSession extends Equatable {
-  const AuthSession({required this.student, required this.session});
+  const AuthSession({required this.student});
 
   final Student student;
-  final ExamSession session;
 
   @override
-  List<Object?> get props => [student, session];
+  List<Object?> get props => [student];
 }

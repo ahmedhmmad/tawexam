@@ -12,10 +12,16 @@ class ExamResultModel extends ExamResult {
   factory ExamResultModel.fromJson(Map<String, dynamic> json) {
     final data = Map<String, dynamic>.from(json['data'] as Map? ?? json);
     return ExamResultModel(
-      examId: '${data['examId'] ?? data['exam_id']}',
+      examId: '${data['examId'] ?? data['exam_id'] ?? ''}',
       score: _readInt(data, 'score'),
       totalQuestions: _readInt(data, 'totalQuestions'),
-      correctAnswers: _readInt(data, 'correctAnswers'),
+      correctAnswers: _readInt(
+        data,
+        data.containsKey('correctAnswers') ||
+                data.containsKey('correct_answers')
+            ? 'correctAnswers'
+            : 'correctCount',
+      ),
       items: _readItems(data['items'] ?? data['questions']),
     );
   }

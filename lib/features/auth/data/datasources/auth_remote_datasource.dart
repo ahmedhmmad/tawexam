@@ -20,7 +20,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String password,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/auth/login',
+      '/auth/student/login',
       data: {'seatNumber': seatNumber, 'password': password},
     );
     return AuthResponseModel.fromJson(response.data ?? const {});
