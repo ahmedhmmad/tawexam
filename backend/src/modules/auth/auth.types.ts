@@ -10,6 +10,7 @@ export interface LoginResult {
     username?: string;
     seatNumber?: string;
     fullName?: string;
+    branch?: string;
   };
 }
 

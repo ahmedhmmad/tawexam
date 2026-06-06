@@ -10,9 +10,6 @@ import '../cubit/exam_manager_state.dart';
 import 'question_upload_page.dart';
 import 'questions_page.dart';
 
-/// Gaza timezone offset (UTC+3)
-DateTime _toGaza(DateTime utc) => utc.toUtc().add(const Duration(hours: 3));
-DateTime _fromGaza(DateTime gazaLocal) => gazaLocal.subtract(const Duration(hours: 3)).toUtc();
 
 class ExamsListContent extends StatefulWidget {
   const ExamsListContent({super.key});
@@ -144,8 +141,8 @@ class _ExamCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gazaStart = _toGaza(exam.startAt);
-    final gazaEnd = _toGaza(exam.endAt);
+    final gazaStart = exam.startAt.toLocal();
+    final gazaEnd = exam.endAt.toLocal();
     final dateFmt = DateFormat('yyyy/MM/dd HH:mm');
 
     return Card(
@@ -353,8 +350,9 @@ class _ExamFormDialogState extends State<_ExamFormDialog> {
 
     if (e != null) {
       _selectedBranches.addAll(e.allowedBranches);
-      _startDate = _toGaza(e.startAt);
-      _endDate = _toGaza(e.endAt);
+      // Dates from API are in UTC, convert to local for the picker
+      _startDate = e.startAt.toLocal();
+      _endDate = e.endAt.toLocal();
       _showResults = e.showResults;
       _showAnswers = e.showAnswers;
     } else {
@@ -403,7 +401,7 @@ class _ExamFormDialogState extends State<_ExamFormDialog> {
                 ),
                 const SizedBox(height: 12),
 
-                const Text('التوقيت (بتوقيت غزة UTC+3):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                const Text('التوقيت:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                 const SizedBox(height: 4),
                 Row(children: [
                   Expanded(child: _DateTimeTile(label: 'بداية الامتحان', value: _startDate, onPick: (d) => setState(() => _startDate = d))),
@@ -447,9 +445,10 @@ class _ExamFormDialogState extends State<_ExamFormDialog> {
     }
 
     final now = DateTime.now();
-    // Convert Gaza local time to UTC for API
-    final startAt = _activateNow ? now.subtract(const Duration(minutes: 1)) : _fromGaza(_startDate);
-    final endAt = _activateNow ? now.add(Duration(minutes: int.tryParse(_duration.text) ?? 60)) : _fromGaza(_endDate);
+    // The date picker returns local time (device is in Gaza timezone)
+    // Just use them directly — the repository calls .toUtc().toIso8601String()
+    final startAt = _activateNow ? now.subtract(const Duration(minutes: 1)) : _startDate;
+    final endAt = _activateNow ? now.add(Duration(minutes: int.tryParse(_duration.text) ?? 60)) : _endDate;
 
     final params = CreateExamParams(
       subjectNameAr: _nameAr.text,

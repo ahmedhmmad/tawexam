@@ -33,7 +33,8 @@ export class AuthService {
       id: student.id,
       subjectType: "student",
       seatNumber: student.seatNumber,
-      fullName: student.fullName
+      fullName: student.fullName,
+      branch: student.branch
     });
   }
 
@@ -96,7 +97,8 @@ export class AuthService {
         id: student.id,
         subjectType: "student",
         seatNumber: student.seatNumber,
-        fullName: student.fullName
+        fullName: student.fullName,
+        branch: student.branch
       }
     );
   }
