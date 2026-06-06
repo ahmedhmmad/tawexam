@@ -63,30 +63,31 @@ class _StudentHomePageState extends State<StudentHomePage> {
         final r = await _dio.get<Map<String, dynamic>>('/exam/current');
         _currentExam = r.data?['data'] as Map<String, dynamic>?;
       } on DioException catch (e) {
+        // Show the actual error for debugging
         if (e.response?.statusCode == 404) {
           _currentExam = null;
         } else {
-          rethrow;
+          _currentExam = null;
+          _error = 'exam: ${e.response?.statusCode} ${e.message}';
         }
+      } catch (e) {
+        _currentExam = null;
+        _error = 'exam-err: $e';
       }
 
-      // Load past exams (completed sessions)
+      // Load past exams - optional
       try {
         final r = await _dio.get<Map<String, dynamic>>('/exam/history');
         final list = r.data?['data'] as List?;
         _pastExams = list?.map((e) => Map<String, dynamic>.from(e as Map)).toList() ?? [];
-      } on DioException {
+      } catch (_) {
         _pastExams = [];
       }
 
       _startCountdownIfNeeded();
       setState(() => _loading = false);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        setState(() { _currentExam = null; _loading = false; });
-      } else {
-        setState(() { _error = 'خطأ في الاتصال بالخادم'; _loading = false; });
-      }
+    } catch (e) {
+      setState(() { _error = 'load: $e'; _loading = false; });
     }
   }
 
