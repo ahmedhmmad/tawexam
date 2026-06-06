@@ -81,8 +81,21 @@ export class ExamsService {
       throw new AppError("No active exam available", 404, "EXAM_NOT_AVAILABLE");
     }
 
-    // Get current attempt number
+    // Check if student has exhausted attempts
     const attemptCount = await this.sessionsService.getAttemptCount(exam.id, studentId);
+    if (attemptCount >= exam.maxAttempts) {
+      throw new AppError("No active exam available", 404, "EXAM_NOT_AVAILABLE");
+    }
+
+    // Check if exam time window has elapsed (exam-level timer)
+    const now = new Date();
+    const examElapsedSeconds = Math.floor((now.getTime() - exam.startAt.getTime()) / 1000);
+    const examTotalSeconds = exam.durationMinutes * 60;
+    const remainingInWindow = examTotalSeconds - examElapsedSeconds;
+
+    if (remainingInWindow <= 0) {
+      throw new AppError("No active exam available", 404, "EXAM_NOT_AVAILABLE");
+    }
 
     return {
       id: exam.id,
@@ -96,7 +109,8 @@ export class ExamsService {
       passingScore: exam.passingScore,
       instructions: exam.instructions,
       maxAttempts: exam.maxAttempts,
-      currentAttempt: attemptCount + 1
+      currentAttempt: attemptCount + 1,
+      remainingSeconds: remainingInWindow
     };
   }
 

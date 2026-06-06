@@ -28,8 +28,17 @@ export class SessionsService {
       throw new AppError("Maximum attempts reached", 400, "MAX_ATTEMPTS_REACHED");
     }
 
-    const remainingSeconds = exam.durationMinutes * 60;
-    const expiresAt = new Date(Date.now() + remainingSeconds * 1000);
+    // Timer is based on the exam window: remaining = durationMinutes - elapsed since startAt
+    const now = new Date();
+    const examElapsedSeconds = Math.floor((now.getTime() - exam.startAt.getTime()) / 1000);
+    const examTotalSeconds = exam.durationMinutes * 60;
+    const remainingSeconds = Math.max(0, examTotalSeconds - examElapsedSeconds);
+
+    if (remainingSeconds <= 0) {
+      throw new AppError("Exam time has expired", 400, "EXAM_TIME_EXPIRED");
+    }
+
+    const expiresAt = new Date(now.getTime() + remainingSeconds * 1000);
     const session = await this.repository.create({
       studentId,
       examId,
