@@ -72,7 +72,8 @@ export class StudentsService {
     const validRows: StudentImportRow[] = parsed.validRows.map((row) => ({
       id: String(row.id),
       name: row.name,
-      mobile_no: String(row.mobile_no)
+      mobile_no: String(row.mobile_no),
+      branch: row.branch || ""
     }));
 
     const preparedRows = await Promise.all(
@@ -81,7 +82,7 @@ export class StudentsService {
         fullName: row.name,
         passwordHash: await hashPassword(row.mobile_no),
         mobileNo: row.mobile_no,
-        branch: "",
+        branch: row.branch || "",
         schoolName: "",
         isActive: true
       }))

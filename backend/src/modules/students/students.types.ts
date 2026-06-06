@@ -10,4 +10,5 @@ export interface StudentImportRow {
   id: string;
   name: string;
   mobile_no: string;
+  branch?: string;
 }

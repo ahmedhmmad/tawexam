@@ -283,7 +283,7 @@ class _CreateExamDialogState extends State<_CreateExamDialog> {
                 TextFormField(
                   controller: _branches,
                   decoration: const InputDecoration(
-                    labelText: 'Branches (comma separated)',
+                    labelText: 'الفروع المسموحة (مفصولة بفاصلة)',
                     hintText: 'علمي, أدبي',
                   ),
                 ),

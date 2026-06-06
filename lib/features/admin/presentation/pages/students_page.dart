@@ -180,7 +180,7 @@ class _StudentsContentState extends State<StudentsContent> {
               }),
             ),
             title: Text(s['fullName'] as String? ?? ''),
-            subtitle: Text('${s['seatNumber']} | ${s['mobileNo'] ?? ''}'),
+            subtitle: Text('${s['seatNumber']} | ${s['mobileNo'] ?? ''} | ${s['branch'] ?? ''}'),
             trailing: PopupMenuButton<String>(
               onSelected: (action) => _onAction(s, action),
               itemBuilder: (_) => [
@@ -340,17 +340,19 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
         width: 400,
         child: Form(
           key: _formKey,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextFormField(controller: _seatNumber, decoration: const InputDecoration(labelText: 'رقم الجلوس'), validator: (v) => (v ?? '').isEmpty ? 'مطلوب' : null),
-            const SizedBox(height: 8),
-            TextFormField(controller: _fullName, decoration: const InputDecoration(labelText: 'الاسم الكامل'), validator: (v) => (v ?? '').isEmpty ? 'مطلوب' : null),
-            const SizedBox(height: 8),
-            TextFormField(controller: _mobileNo, decoration: const InputDecoration(labelText: 'رقم الموبايل'), keyboardType: TextInputType.phone),
-            const SizedBox(height: 8),
-            TextFormField(controller: _branch, decoration: const InputDecoration(labelText: 'الفرع', hintText: 'علمي، أدبي...')),
-            const SizedBox(height: 8),
-            TextFormField(controller: _password, decoration: InputDecoration(labelText: _isEditing ? 'كلمة مرور جديدة (اتركها فارغة للإبقاء)' : 'كلمة المرور (افتراضي = الموبايل)')),
-          ]),
+          child: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextFormField(controller: _seatNumber, decoration: const InputDecoration(labelText: 'رقم الجلوس'), validator: (v) => (v ?? '').isEmpty ? 'مطلوب' : null),
+              const SizedBox(height: 8),
+              TextFormField(controller: _fullName, decoration: const InputDecoration(labelText: 'الاسم الكامل'), validator: (v) => (v ?? '').isEmpty ? 'مطلوب' : null),
+              const SizedBox(height: 8),
+              TextFormField(controller: _mobileNo, decoration: const InputDecoration(labelText: 'رقم الموبايل'), keyboardType: TextInputType.phone),
+              const SizedBox(height: 8),
+              TextFormField(controller: _branch, decoration: const InputDecoration(labelText: 'الفرع', hintText: 'علمي، أدبي...')),
+              const SizedBox(height: 8),
+              TextFormField(controller: _password, decoration: InputDecoration(labelText: _isEditing ? 'كلمة مرور جديدة (اتركها فارغة للإبقاء)' : 'كلمة المرور (افتراضي = الموبايل)')),
+            ]),
+          ),
         ),
       ),
       actions: [

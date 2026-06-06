@@ -40,9 +40,10 @@ export const resetPasswordSchema = z.object({
   password: z.string().min(1).optional()
 });
 
-// Excel import: columns are id, name, mobile_no
+// Excel import: columns are id, name, mobile_no, branch (optional)
 export const studentImportRowSchema = z.object({
   id: z.coerce.string().min(1),
   name: z.string().min(1),
-  mobile_no: z.coerce.string().min(1)
+  mobile_no: z.coerce.string().min(1),
+  branch: z.string().optional().default("")
 });
