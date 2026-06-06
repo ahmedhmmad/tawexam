@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../main.dart' show cacheStudent;
 import '../../../exam/presentation/cubit/exam_cubit.dart';
-import '../../../exam/presentation/pages/instructions_page.dart';
+import '../../../exam/presentation/pages/student_home_page.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 
@@ -80,13 +81,16 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _openInstructions(BuildContext context, AuthSuccess state) {
+    // Cache student for session persistence (survives app restart)
+    cacheStudent(state.student);
+
     final examCubit = getIt<ExamCubit>();
     examCubit.loadForStudent(student: state.student);
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => BlocProvider.value(
           value: examCubit,
-          child: const InstructionsPage(),
+          child: StudentHomePage(student: state.student),
         ),
       ),
     );

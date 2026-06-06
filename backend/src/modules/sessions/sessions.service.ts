@@ -48,6 +48,10 @@ export class SessionsService {
     return { ...session, serverTime: new Date() };
   }
 
+  async getAttemptCount(examId: string, studentId: string): Promise<number> {
+    return this.repository.countAttempts(studentId, examId);
+  }
+
   async getStudentSession(examId: string, studentId: string) {
     const session = await this.repository.findByStudentAndExam(studentId, examId);
     if (!session) {

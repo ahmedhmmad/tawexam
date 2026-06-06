@@ -17,6 +17,9 @@ class CreateExamParams {
     required this.allowedBranches,
     required this.maxAttempts,
     required this.instructions,
+    this.showResults = false,
+    this.showAnswers = false,
+    this.status,
   });
   final String subjectNameAr;
   final String subjectNameEn;
@@ -28,6 +31,9 @@ class CreateExamParams {
   final List<String> allowedBranches;
   final int maxAttempts;
   final String instructions;
+  final bool showResults;
+  final bool showAnswers;
+  final String? status; // If 'ACTIVE', skip DRAFT and go directly to ACTIVE
 }
 
 class StudentFilter {
@@ -48,6 +54,7 @@ class StudentFilter {
 abstract interface class AdminRepository {
   Future<Either<Failure, List<AdminExam>>> getExams();
   Future<Either<Failure, AdminExam>> createExam(CreateExamParams params);
+  Future<Either<Failure, AdminExam>> updateExam(String examId, CreateExamParams params);
   Future<Either<Failure, Unit>> updateExamStatus(String examId, String status);
   Future<Either<Failure, Unit>> deleteExam(String examId);
   Future<Either<Failure, List<AdminStudent>>> getStudents(StudentFilter filter);

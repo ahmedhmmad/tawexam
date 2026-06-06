@@ -71,6 +71,8 @@ model Exam {
   maxAttempts     Int           @default(1)
   status          ExamStatus    @default(DRAFT)
   instructions    String
+  showResults     Boolean       @default(false)
+  showAnswers     Boolean       @default(false)
   createdById     String
   createdAt       DateTime      @default(now())
   createdBy       AdminUser     @relation(fields: [createdById], references: [id])

@@ -35,13 +35,19 @@ export class ExamsService {
     allowedBranches: string[];
     maxAttempts: number;
     instructions: string;
+    showResults?: boolean;
+    showAnswers?: boolean;
+    status?: string;
     createdById: string;
   }) {
     return this.repository.create({
       ...payload,
       examDate: new Date(payload.examDate),
       startAt: new Date(payload.startAt),
-      endAt: new Date(payload.endAt)
+      endAt: new Date(payload.endAt),
+      showResults: payload.showResults ?? false,
+      showAnswers: payload.showAnswers ?? false,
+      status: payload.status === 'ACTIVE' ? 'ACTIVE' : undefined
     });
   }
 
@@ -75,6 +81,9 @@ export class ExamsService {
       throw new AppError("No active exam available", 404, "EXAM_NOT_AVAILABLE");
     }
 
+    // Get current attempt number
+    const attemptCount = await this.sessionsService.getAttemptCount(exam.id, studentId);
+
     return {
       id: exam.id,
       subjectNameAr: exam.subjectNameAr,
@@ -85,8 +94,14 @@ export class ExamsService {
       durationMinutes: exam.durationMinutes,
       totalQuestions: exam.questions.length,
       passingScore: exam.passingScore,
-      instructions: exam.instructions
+      instructions: exam.instructions,
+      maxAttempts: exam.maxAttempts,
+      currentAttempt: attemptCount + 1
     };
+  }
+
+  async studentHistory(studentId: string) {
+    return this.repository.getStudentHistory(studentId);
   }
 
   async studentQuestions(examId: string, studentId: string) {

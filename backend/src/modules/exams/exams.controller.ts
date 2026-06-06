@@ -12,6 +12,11 @@ export class ExamsController {
     return sendSuccess(res, exam);
   }
 
+  async history(req: Request, res: Response): Promise<Response> {
+    const history = await examsService.studentHistory(req.user!.id);
+    return sendSuccess(res, history);
+  }
+
   async studentQuestions(req: Request, res: Response): Promise<Response> {
     const questions = await examsService.studentQuestions(req.params.id as string, req.user!.id);
     return sendSuccess(res, questions);

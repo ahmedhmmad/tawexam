@@ -28,6 +28,7 @@ import '../../features/admin/domain/usecases/get_exams_usecase.dart';
 import '../../features/admin/domain/usecases/get_results_usecase.dart';
 import '../../features/admin/domain/usecases/get_students_usecase.dart';
 import '../../features/admin/domain/usecases/import_students_usecase.dart';
+import '../../features/admin/domain/usecases/update_exam_usecase.dart';
 import '../../features/admin/domain/usecases/update_exam_status_usecase.dart';
 import '../../features/admin/domain/usecases/upload_questions_usecase.dart';
 import '../../features/admin/presentation/cubit/admin_auth_cubit.dart';
@@ -142,6 +143,7 @@ Future<void> configureDependencies() async {
     )
     ..registerLazySingleton(() => GetExamsUseCase(getIt()))
     ..registerLazySingleton(() => CreateExamUseCase(getIt()))
+    ..registerLazySingleton(() => UpdateExamUseCase(getIt()))
     ..registerLazySingleton(() => UpdateExamStatusUseCase(getIt()))
     ..registerLazySingleton(() => DeleteExamUseCase(getIt()))
     ..registerLazySingleton(() => GetStudentsUseCase(getIt()))
@@ -155,6 +157,7 @@ Future<void> configureDependencies() async {
     ..registerFactory(() => ExamManagerCubit(
           getExams: getIt(),
           createExam: getIt(),
+          updateExam: getIt(),
           updateStatus: getIt(),
           deleteExam: getIt(),
         ))

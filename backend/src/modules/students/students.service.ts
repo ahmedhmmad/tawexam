@@ -58,7 +58,7 @@ export class StudentsService {
     return this.repository.delete(id);
   }
 
-  async importFromWorkbook(file: Express.Multer.File): Promise<{
+  async importFromWorkbook(file: Express.Multer.File, defaultBranch?: string): Promise<{
     imported: number;
     validRows: StudentImportRow[];
     errors: Array<{ rowNumber: number; errors: string[] }>;
@@ -73,7 +73,7 @@ export class StudentsService {
       id: String(row.id),
       name: row.name,
       mobile_no: String(row.mobile_no),
-      branch: row.branch || ""
+      branch: defaultBranch || row.branch || ""
     }));
 
     const preparedRows = await Promise.all(
@@ -82,7 +82,7 @@ export class StudentsService {
         fullName: row.name,
         passwordHash: await hashPassword(row.mobile_no),
         mobileNo: row.mobile_no,
-        branch: row.branch || "",
+        branch: row.branch || defaultBranch || "",
         schoolName: "",
         isActive: true
       }))

@@ -77,13 +77,14 @@ export class StudentsController {
   }
 
   async import(req: Request, res: Response): Promise<Response> {
-    const result = await studentsService.importFromWorkbook(req.file as Express.Multer.File);
+    const branch = req.body?.branch as string | undefined;
+    const result = await studentsService.importFromWorkbook(req.file as Express.Multer.File, branch);
     await AuditLogService.log({
       adminId: req.user!.id,
       action: "IMPORT",
       targetEntity: "Student",
       targetId: "bulk",
-      payload: { imported: result.imported, errorCount: result.errors.length }
+      payload: { imported: result.imported, errorCount: result.errors.length, branch: branch || null }
     });
     return sendSuccess(res, result, "Students imported");
   }

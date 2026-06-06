@@ -8,6 +8,7 @@ import '../../domain/repositories/admin_repository.dart';
 abstract interface class AdminRemoteDataSource {
   Future<List<AdminExamModel>> getExams();
   Future<AdminExamModel> createExam(Map<String, dynamic> body);
+  Future<AdminExamModel> updateExam(String examId, Map<String, dynamic> body);
   Future<void> updateExamStatus(String examId, String status);
   Future<void> deleteExam(String examId);
   Future<List<AdminStudentModel>> getStudents(StudentFilter filter);
@@ -33,6 +34,12 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
   @override
   Future<AdminExamModel> createExam(Map<String, dynamic> body) async {
     final r = await _dio.post<Map<String, dynamic>>('/admin/exams', data: body);
+    return AdminExamModel.fromJson(Map<String, dynamic>.from(r.data?['data'] as Map));
+  }
+
+  @override
+  Future<AdminExamModel> updateExam(String examId, Map<String, dynamic> body) async {
+    final r = await _dio.put<Map<String, dynamic>>('/admin/exams/$examId', data: body);
     return AdminExamModel.fromJson(Map<String, dynamic>.from(r.data?['data'] as Map));
   }
 

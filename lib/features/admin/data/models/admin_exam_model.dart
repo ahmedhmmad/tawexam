@@ -13,6 +13,11 @@ class AdminExamModel extends AdminExam {
     required super.status,
     required super.totalQuestions,
     required super.totalSessions,
+    required super.allowedBranches,
+    required super.maxAttempts,
+    required super.instructions,
+    required super.showResults,
+    required super.showAnswers,
   });
 
   factory AdminExamModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +34,11 @@ class AdminExamModel extends AdminExam {
       status: '${json['status'] ?? 'DRAFT'}',
       totalQuestions: _int(count['questions']),
       totalSessions: _int(count['sessions']),
+      allowedBranches: (json['allowedBranches'] as List?)?.map((e) => '$e').toList() ?? [],
+      maxAttempts: _int(json['maxAttempts']),
+      instructions: '${json['instructions'] ?? ''}',
+      showResults: json['showResults'] == true,
+      showAnswers: json['showAnswers'] == true,
     );
   }
 

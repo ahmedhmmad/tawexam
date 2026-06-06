@@ -265,6 +265,25 @@ class _StudentsContentState extends State<StudentsContent> {
   }
 
   Future<void> _importExcel() async {
+    // Show branch selection dialog before import
+    final branch = await showDialog<String>(context: context, builder: (_) => AlertDialog(
+      title: const Text('اختر الفرع للطلاب المستوردين'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('سيتم تعيين هذا الفرع لجميع الطلاب في الملف:'),
+          const SizedBox(height: 16),
+          ...['علمي', 'أدبي', 'شرعي', 'صناعي'].map((b) => ListTile(
+            title: Text(b),
+            leading: const Icon(Icons.school),
+            onTap: () => Navigator.pop(context, b),
+          )),
+        ],
+      ),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء'))],
+    ));
+    if (branch == null) return;
+
     final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['xlsx'], withData: true);
     if (result == null || result.files.isEmpty) return;
     final file = result.files.single;
@@ -272,7 +291,10 @@ class _StudentsContentState extends State<StudentsContent> {
 
     setState(() => _loading = true);
     try {
-      final formData = FormData.fromMap({'file': MultipartFile.fromBytes(file.bytes!, filename: file.name)});
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(file.bytes!, filename: file.name),
+        'branch': branch,
+      });
       final r = await _dio.post<Map<String, dynamic>>(
         '/admin/students/import',
         data: formData,
@@ -282,7 +304,7 @@ class _StudentsContentState extends State<StudentsContent> {
       final errors = (r.data?['data']?['errors'] as List?)?.length ?? 0;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('تم استيراد/تحديث $imported طالب${errors > 0 ? ' ($errors أخطاء)' : ''}'),
+          content: Text('تم استيراد/تحديث $imported طالب (فرع: $branch)${errors > 0 ? ' ($errors أخطاء)' : ''}'),
           duration: const Duration(seconds: 5),
         ));
       }
@@ -348,7 +370,17 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
               const SizedBox(height: 8),
               TextFormField(controller: _mobileNo, decoration: const InputDecoration(labelText: 'رقم الموبايل'), keyboardType: TextInputType.phone),
               const SizedBox(height: 8),
-              TextFormField(controller: _branch, decoration: const InputDecoration(labelText: 'الفرع', hintText: 'علمي، أدبي...')),
+              DropdownButtonFormField<String>(
+                value: _branch.text.isNotEmpty ? _branch.text : null,
+                decoration: const InputDecoration(labelText: 'الفرع'),
+                items: const [
+                  DropdownMenuItem(value: 'علمي', child: Text('علمي')),
+                  DropdownMenuItem(value: 'أدبي', child: Text('أدبي')),
+                  DropdownMenuItem(value: 'شرعي', child: Text('شرعي')),
+                  DropdownMenuItem(value: 'صناعي', child: Text('صناعي')),
+                ],
+                onChanged: (v) => _branch.text = v ?? '',
+              ),
               const SizedBox(height: 8),
               TextFormField(controller: _password, decoration: InputDecoration(labelText: _isEditing ? 'كلمة مرور جديدة (اتركها فارغة للإبقاء)' : 'كلمة المرور (افتراضي = الموبايل)')),
             ]),

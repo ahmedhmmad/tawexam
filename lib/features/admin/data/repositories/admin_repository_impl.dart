@@ -32,6 +32,29 @@ class AdminRepositoryImpl implements AdminRepository {
         'allowedBranches': p.allowedBranches,
         'maxAttempts': p.maxAttempts,
         'instructions': p.instructions,
+        'showResults': p.showResults,
+        'showAnswers': p.showAnswers,
+        if (p.status != null) 'status': p.status,
+      }));
+    } catch (e) { return Left(mapExceptionToFailure(e)); }
+  }
+
+  @override
+  Future<Either<Failure, AdminExam>> updateExam(String examId, CreateExamParams p) async {
+    try {
+      return Right(await _remote.updateExam(examId, {
+        'subjectNameAr': p.subjectNameAr,
+        'subjectNameEn': p.subjectNameEn,
+        'examDate': p.examDate.toUtc().toIso8601String(),
+        'startAt': p.startAt.toUtc().toIso8601String(),
+        'endAt': p.endAt.toUtc().toIso8601String(),
+        'durationMinutes': p.durationMinutes,
+        'passingScore': p.passingScore,
+        'allowedBranches': p.allowedBranches,
+        'maxAttempts': p.maxAttempts,
+        'instructions': p.instructions,
+        'showResults': p.showResults,
+        'showAnswers': p.showAnswers,
       }));
     } catch (e) { return Left(mapExceptionToFailure(e)); }
   }

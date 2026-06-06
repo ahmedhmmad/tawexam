@@ -23,9 +23,29 @@ export class ExamsRepository {
     allowedBranches: string[];
     maxAttempts: number;
     instructions: string;
+    showResults?: boolean;
+    showAnswers?: boolean;
+    status?: string;
     createdById: string;
   }) {
-    return prisma.exam.create({ data });
+    return prisma.exam.create({
+      data: {
+        subjectNameAr: data.subjectNameAr,
+        subjectNameEn: data.subjectNameEn,
+        examDate: data.examDate,
+        startAt: data.startAt,
+        endAt: data.endAt,
+        durationMinutes: data.durationMinutes,
+        passingScore: data.passingScore,
+        allowedBranches: data.allowedBranches,
+        maxAttempts: data.maxAttempts,
+        instructions: data.instructions,
+        showResults: data.showResults ?? false,
+        showAnswers: data.showAnswers ?? false,
+        status: data.status === 'ACTIVE' ? ExamStatus.ACTIVE : ExamStatus.DRAFT,
+        createdById: data.createdById,
+      }
+    });
   }
 
   update(id: string, data: Record<string, unknown>) {
@@ -68,6 +88,30 @@ export class ExamsRepository {
 
   findStudentById(studentId: string) {
     return prisma.student.findUnique({ where: { id: studentId } });
+  }
+
+  async getStudentHistory(studentId: string) {
+    const sessions = await prisma.examSession.findMany({
+      where: {
+        studentId,
+        status: { in: ['SUBMITTED', 'EXPIRED'] }
+      },
+      include: {
+        exam: { select: { subjectNameAr: true, subjectNameEn: true } },
+        result: { select: { score: true } }
+      },
+      orderBy: { submittedAt: 'desc' },
+      take: 20
+    });
+
+    return sessions.map(s => ({
+      examId: s.examId,
+      subjectNameAr: s.exam.subjectNameAr,
+      subjectNameEn: s.exam.subjectNameEn,
+      submittedAt: s.submittedAt?.toISOString() ?? s.startedAt.toISOString(),
+      score: s.result?.score ?? null,
+      status: s.status
+    }));
   }
 
   async duplicate(id: string, adminId: string) {
