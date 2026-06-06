@@ -16,6 +16,7 @@ class StudentsContent extends StatefulWidget {
 class _StudentsContentState extends State<StudentsContent> {
   final Dio _dio = getIt<ApiClient>().dio;
   List<Map<String, dynamic>> _students = [];
+  Set<String> _selected = {};
   bool _loading = true;
   String? _error;
 
@@ -53,6 +54,12 @@ class _StudentsContentState extends State<StudentsContent> {
       appBar: AppBar(
         title: Text('Students (${_students.length})'),
         actions: [
+          if (_selected.isNotEmpty) ...[
+            Text('${_selected.length} selected', style: const TextStyle(fontSize: 14)),
+            IconButton(icon: const Icon(Icons.delete, color: Colors.red), tooltip: 'Delete Selected', onPressed: _deleteSelected),
+            IconButton(icon: const Icon(Icons.deselect), tooltip: 'Clear Selection', onPressed: () => setState(() => _selected.clear())),
+          ],
+          IconButton(icon: const Icon(Icons.select_all), tooltip: 'Select All', onPressed: _selectAll),
           IconButton(icon: const Icon(Icons.person_add), tooltip: 'Add Student', onPressed: () => _showStudentDialog(context)),
           IconButton(icon: const Icon(Icons.upload_file), tooltip: 'Import Excel', onPressed: _importExcel),
           IconButton(icon: const Icon(Icons.download), tooltip: 'Export Excel', onPressed: _exportExcel),
@@ -61,6 +68,41 @@ class _StudentsContentState extends State<StudentsContent> {
       ),
       body: _buildBody(),
     );
+  }
+
+  void _selectAll() {
+    setState(() {
+      if (_selected.length == _students.length) {
+        _selected.clear();
+      } else {
+        _selected = _students.map((s) => s['id'] as String).toSet();
+      }
+    });
+  }
+
+  Future<void> _deleteSelected() async {
+    final count = _selected.length;
+    final confirm = await showDialog<bool>(context: context, builder: (_) => AlertDialog(
+      title: Text('Delete $count students?'),
+      content: const Text('This cannot be undone.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+      ],
+    ));
+    if (confirm != true) return;
+
+    setState(() => _loading = true);
+    int deleted = 0;
+    for (final id in _selected.toList()) {
+      try {
+        await _dio.delete<void>('/admin/students/$id');
+        deleted++;
+      } catch (_) {}
+    }
+    _selected.clear();
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$deleted students deleted')));
+    _loadStudents();
   }
 
   Widget _buildBody() {
@@ -76,12 +118,17 @@ class _StudentsContentState extends State<StudentsContent> {
       itemCount: _students.length,
       itemBuilder: (_, i) {
         final s = _students[i];
+        final id = s['id'] as String;
+        final isSelected = _selected.contains(id);
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
+          color: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
           child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: s['isActive'] == true ? Colors.green : Colors.grey,
-              child: Text((s['fullName'] as String? ?? '?')[0], style: const TextStyle(color: Colors.white)),
+            leading: Checkbox(
+              value: isSelected,
+              onChanged: (_) => setState(() {
+                isSelected ? _selected.remove(id) : _selected.add(id);
+              }),
             ),
             title: Text(s['fullName'] as String? ?? ''),
             subtitle: Text('Seat: ${s['seatNumber']} | Mobile: ${s['mobileNo'] ?? ''}'),
@@ -173,7 +220,13 @@ class _StudentsContentState extends State<StudentsContent> {
         options: Options(receiveTimeout: const Duration(minutes: 5), sendTimeout: const Duration(minutes: 2)),
       );
       final imported = r.data?['data']?['imported'] ?? 0;
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$imported students imported')));
+      final errors = (r.data?['data']?['errors'] as List?)?.length ?? 0;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('$imported students imported/updated${errors > 0 ? ' ($errors rows had errors)' : ''}'),
+          duration: const Duration(seconds: 5),
+        ));
+      }
       _loadStudents();
     } catch (e) {
       setState(() => _loading = false);
