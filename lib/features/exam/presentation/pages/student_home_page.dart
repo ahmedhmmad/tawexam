@@ -17,6 +17,15 @@ import 'instructions_page.dart';
 /// Gaza timezone offset (UTC+3)
 DateTime _toGaza(DateTime utc) => utc.toUtc().add(const Duration(hours: 3));
 
+/// Branch color mapping
+Color _branchColor(String branch) => switch (branch) {
+  'علمي' => const Color(0xFF1565C0), // blue
+  'أدبي' => const Color(0xFF2E7D32), // green
+  'شرعي' => const Color(0xFF6A1B9A), // purple
+  'صناعي' => const Color(0xFFE65100), // orange
+  _ => const Color(0xFF546E7A),       // grey-blue default
+};
+
 class StudentHomePage extends StatefulWidget {
   const StudentHomePage({required this.student, super.key});
   final Student student;
@@ -83,22 +92,31 @@ class _StudentHomePageState extends State<StudentHomePage> {
 
   void _startCountdownIfNeeded() {
     _countdownTimer?.cancel();
+    _countdown = Duration.zero;
     if (_currentExam == null) return;
 
     final startAtStr = _currentExam!['startAt'] as String?;
+    final status = _currentExam!['status'] as String? ?? '';
     if (startAtStr == null) return;
 
     final startAt = DateTime.parse(startAtStr);
     final now = DateTime.now().toUtc();
-    if (startAt.isAfter(now)) {
-      _countdown = startAt.difference(now);
+
+    // For SCHEDULED exams, countdown to start time
+    // For ACTIVE exams that haven't started yet (rare), countdown too
+    if (startAt.isAfter(now) || status == 'SCHEDULED') {
+      final diff = startAt.difference(now);
+      if (diff.isNegative) return; // Already started
+      _countdown = diff;
       _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (!mounted) return;
         setState(() {
           _countdown = _countdown - const Duration(seconds: 1);
-          if (_countdown.isNegative) {
+          if (_countdown.isNegative || _countdown == Duration.zero) {
             _countdownTimer?.cancel();
             _countdown = Duration.zero;
+            // Reload to get updated status
+            _loadExams();
           }
         });
       });
@@ -107,13 +125,15 @@ class _StudentHomePageState extends State<StudentHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final branchCol = _branchColor(widget.student.branch);
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         body: SafeArea(
           child: Column(
             children: [
-              _buildHeader(context),
+              _buildHeader(context, branchCol),
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _loadExams,
@@ -127,51 +147,45 @@ class _StudentHomePageState extends State<StudentHomePage> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, Color branchCol) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primary.withValues(alpha: 0.8)],
+          colors: [branchCol, branchCol.withValues(alpha: 0.75)],
         ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(24),
           bottomRight: Radius.circular(24),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('مرحباً', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
+                const SizedBox(height: 4),
+                Text(widget.student.fullName,
+                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Row(
                   children: [
-                    Text('مرحباً',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
-                    const SizedBox(height: 4),
-                    Text(widget.student.fullName,
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        _HeaderBadge(Icons.confirmation_number, widget.student.seatNumber),
-                        const SizedBox(width: 12),
-                        if (widget.student.branch.isNotEmpty)
-                          _HeaderBadge(Icons.school, widget.student.branch),
-                      ],
-                    ),
+                    _HeaderBadge(Icons.confirmation_number, widget.student.seatNumber),
+                    const SizedBox(width: 10),
+                    if (widget.student.branch.isNotEmpty)
+                      _BranchBadge(widget.student.branch),
                   ],
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.logout, color: Colors.white),
-                tooltip: 'تسجيل الخروج',
-                onPressed: _logout,
-              ),
-            ],
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'تسجيل الخروج',
+            onPressed: _logout,
           ),
         ],
       ),
@@ -196,11 +210,10 @@ class _StudentHomePageState extends State<StudentHomePage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        if (_currentExam != null) ...[
-          _buildCurrentExamCard(context),
-        ] else ...[
+        if (_currentExam != null)
+          _buildCurrentExamCard(context)
+        else
           _buildNoExamCard(),
-        ],
         if (_pastExams.isNotEmpty) ...[
           const SizedBox(height: 24),
           Text('امتحانات سابقة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
@@ -225,7 +238,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
             Text('لا يوجد امتحانات متاحة',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
             const SizedBox(height: 8),
-            Text('سيظهر الامتحان هنا عند اقتراب موعده.\nتأكد من الجدول مع المشرف.',
+            Text('سيظهر الامتحان هنا عند جدولته أو تفعيله.\nتأكد من الجدول مع المشرف.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
             const SizedBox(height: 16),
@@ -243,7 +256,12 @@ class _StudentHomePageState extends State<StudentHomePage> {
     final questions = exam['totalQuestions'] ?? 0;
     final maxAttempts = exam['maxAttempts'] ?? 1;
     final currentAttempt = (exam['currentAttempt'] as int?) ?? 1;
+    final status = exam['status'] as String? ?? 'ACTIVE';
+    final isScheduled = status == 'SCHEDULED';
+    final isActive = status == 'ACTIVE';
     final hasCountdown = _countdown.inSeconds > 0;
+    // Can only start if ACTIVE and no countdown
+    final canStart = isActive && !hasCountdown;
 
     return Card(
       elevation: 4,
@@ -258,10 +276,14 @@ class _StudentHomePageState extends State<StudentHomePage> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                    color: (isScheduled ? Colors.blue : Colors.green).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(Icons.assignment, color: Theme.of(context).colorScheme.primary, size: 28),
+                  child: Icon(
+                    isScheduled ? Icons.schedule : Icons.assignment,
+                    color: isScheduled ? Colors.blue : Colors.green,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -269,9 +291,25 @@ class _StudentHomePageState extends State<StudentHomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 2),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isScheduled ? Colors.blue.shade50 : Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          isScheduled ? 'مجدول' : 'متاح الآن',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold,
+                            color: isScheduled ? Colors.blue.shade700 : Colors.green.shade700),
+                        ),
+                      ),
                       if (maxAttempts > 1)
-                        Text('المحاولة $currentAttempt من $maxAttempts',
-                          style: TextStyle(fontSize: 12, color: Colors.orange.shade700, fontWeight: FontWeight.w600)),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text('المحاولة $currentAttempt من $maxAttempts',
+                            style: TextStyle(fontSize: 12, color: Colors.orange.shade700, fontWeight: FontWeight.w600)),
+                        ),
                     ],
                   ),
                 ),
@@ -284,9 +322,14 @@ class _StudentHomePageState extends State<StudentHomePage> {
             const SizedBox(height: 8),
             _ExamInfoTile(icon: Icons.quiz, label: 'الأسئلة', value: '$questions سؤال'),
             const SizedBox(height: 8),
-            _ExamInfoTile(icon: Icons.repeat, label: 'المحاولات', value: '$maxAttempts'),
-            if (hasCountdown) ...[
-              const SizedBox(height: 16),
+            if (maxAttempts > 1)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _ExamInfoTile(icon: Icons.repeat, label: 'المحاولات', value: '$maxAttempts'),
+              ),
+            // Countdown: either to exam start (SCHEDULED) or active indicator
+            if (hasCountdown || isScheduled) ...[
+              const SizedBox(height: 8),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
@@ -300,8 +343,8 @@ class _StudentHomePageState extends State<StudentHomePage> {
                     Icon(Icons.schedule, color: Colors.blue.shade700, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'يبدأ بعد: ${_formatCountdown(_countdown)}',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade700),
+                      hasCountdown ? 'يبدأ بعد: ${_formatCountdown(_countdown)}' : 'بانتظار التفعيل من المشرف',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.blue.shade700),
                     ),
                   ],
                 ),
@@ -311,9 +354,12 @@ class _StudentHomePageState extends State<StudentHomePage> {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: hasCountdown ? null : () => _startExamFlow(context),
+                onPressed: canStart ? () => _startExamFlow(context) : null,
                 icon: const Icon(Icons.play_arrow),
-                label: Text(hasCountdown ? 'انتظر بداية الامتحان' : 'بدء الامتحان', style: const TextStyle(fontSize: 16)),
+                label: Text(
+                  canStart ? 'بدء الامتحان' : (isScheduled ? 'الامتحان لم يبدأ بعد' : 'انتظر بداية الامتحان'),
+                  style: const TextStyle(fontSize: 16),
+                ),
                 style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               ),
             ),
@@ -405,6 +451,27 @@ class _HeaderBadge extends StatelessWidget {
         Icon(icon, size: 12, color: Colors.white70),
         const SizedBox(width: 4),
         Text(text, style: const TextStyle(color: Colors.white, fontSize: 12)),
+      ]),
+    );
+  }
+}
+
+class _BranchBadge extends StatelessWidget {
+  const _BranchBadge(this.branch);
+  final String branch;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.school, size: 13, color: _branchColor(branch)),
+        const SizedBox(width: 4),
+        Text(branch, style: TextStyle(color: _branchColor(branch), fontSize: 12, fontWeight: FontWeight.bold)),
       ]),
     );
   }

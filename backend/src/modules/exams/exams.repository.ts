@@ -72,7 +72,7 @@ export class ExamsRepository {
     return prisma.exam.findFirst({
       where: {
         status: { in: [ExamStatus.SCHEDULED, ExamStatus.ACTIVE] },
-        startAt: { lte: now },
+        // Show scheduled exams (upcoming) and active exams (within window)
         endAt: { gte: now },
         ...(branch ? { allowedBranches: { has: branch } } : {})
       },
