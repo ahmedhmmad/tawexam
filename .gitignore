@@ -39,7 +39,7 @@ SRS_GAP_ANALYSIS.md
 .env
 /backups/
 /letsencrypt/
-/admin-web/
+
 
 # Symbolication related
 app.*.symbols
