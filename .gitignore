@@ -33,6 +33,7 @@ SRS_GAP_ANALYSIS.md
 .pub/
 /build/
 !/build/web/
+!/build/web/**
 /coverage/
 /backend/node_modules/
 /backend/dist/
