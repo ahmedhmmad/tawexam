@@ -32,6 +32,7 @@ SRS_GAP_ANALYSIS.md
 .pub-cache/
 .pub/
 /build/
+!/build/web/
 /coverage/
 /backend/node_modules/
 /backend/dist/
@@ -39,7 +40,7 @@ SRS_GAP_ANALYSIS.md
 .env
 /backups/
 /letsencrypt/
-
+/admin-web/
 
 # Symbolication related
 app.*.symbols
