@@ -29,7 +29,15 @@ class _StudentsContentState extends State<StudentsContent> {
     setState(() { _loading = true; _error = null; });
     try {
       final r = await _dio.get<Map<String, dynamic>>('/admin/students', queryParameters: {'limit': 100});
-      final list = (r.data?['data'] as List?) ?? [];
+      final responseData = r.data?['data'];
+      List list;
+      if (responseData is List) {
+        list = responseData;
+      } else if (responseData is Map && responseData['data'] is List) {
+        list = responseData['data'] as List;
+      } else {
+        list = [];
+      }
       setState(() {
         _students = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
         _loading = false;
@@ -159,7 +167,11 @@ class _StudentsContentState extends State<StudentsContent> {
       final formData = FormData.fromMap({
         'file': MultipartFile.fromBytes(file.bytes!, filename: file.name),
       });
-      final r = await _dio.post<Map<String, dynamic>>('/admin/students/import', data: formData);
+      final r = await _dio.post<Map<String, dynamic>>(
+        '/admin/students/import',
+        data: formData,
+        options: Options(receiveTimeout: const Duration(minutes: 5), sendTimeout: const Duration(minutes: 2)),
+      );
       final imported = r.data?['data']?['imported'] ?? 0;
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$imported students imported')));
       _loadStudents();
