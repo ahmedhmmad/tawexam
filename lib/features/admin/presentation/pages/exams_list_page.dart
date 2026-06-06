@@ -9,6 +9,7 @@ import '../cubit/exam_manager_cubit.dart';
 import '../cubit/exam_manager_state.dart';
 import 'question_upload_page.dart';
 import 'questions_page.dart';
+import 'results_page.dart';
 
 
 class ExamsListContent extends StatefulWidget {
@@ -127,29 +128,32 @@ class _ExamsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(8),
       itemCount: exams.length,
-      itemBuilder: (ctx, i) => _ExamCard(exam: exams[i], onEdit: onEdit),
+      itemBuilder: (ctx, i) => _ExamCard(exam: exams[i], onEdit: onEdit, index: i),
     );
   }
 }
 
 class _ExamCard extends StatelessWidget {
-  const _ExamCard({required this.exam, required this.onEdit});
+  const _ExamCard({required this.exam, required this.onEdit, required this.index});
   final AdminExam exam;
   final void Function(AdminExam) onEdit;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
     final gazaStart = exam.startAt.toLocal();
     final gazaEnd = exam.endAt.toLocal();
     final dateFmt = DateFormat('yyyy/MM/dd HH:mm');
+    final bgColor = index.isEven ? Colors.white : Colors.blue.shade50;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 6),
+      color: bgColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -186,7 +190,7 @@ class _ExamCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text('من: ${dateFmt.format(gazaStart)}  إلى: ${dateFmt.format(gazaEnd)}',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
             if (exam.allowedBranches.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
@@ -208,6 +212,12 @@ class _ExamCard extends StatelessWidget {
                 )),
                 _ActionBtn(Icons.list_alt, 'عرض', () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => QuestionsPage(
+                    examId: exam.id,
+                    examName: exam.subjectNameAr.isNotEmpty ? exam.subjectNameAr : exam.subjectNameEn,
+                  )),
+                )),
+                _ActionBtn(Icons.assessment, 'نتائج', () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ResultsPage(
                     examId: exam.id,
                     examName: exam.subjectNameAr.isNotEmpty ? exam.subjectNameAr : exam.subjectNameEn,
                   )),
@@ -251,7 +261,7 @@ class _ExamCard extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('حذف الامتحان؟'),
-        content: const Text('يمكن حذف امتحانات المسودة فقط. هل أنت متأكد؟'),
+        content: const Text('سيتم حذف الامتحان نهائياً. هل أنت متأكد؟'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
           FilledButton(

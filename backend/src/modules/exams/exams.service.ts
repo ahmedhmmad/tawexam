@@ -60,13 +60,6 @@ export class ExamsService {
     if (!exam) {
       throw new AppError("Exam not found", 404, "EXAM_NOT_FOUND");
     }
-    if (exam.status !== ExamStatus.DRAFT) {
-      throw new AppError(
-        "Only DRAFT exams can be deleted",
-        409,
-        "EXAM_DELETE_CONFLICT"
-      );
-    }
     return this.repository.delete(id);
   }
 

@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/entities/exam_result.dart';
 import '../cubit/exam_cubit.dart';
-import 'instructions_page.dart';
 
 class ResultPage extends StatelessWidget {
   const ResultPage({required this.result, super.key});
@@ -23,27 +22,12 @@ class ResultPage extends StatelessWidget {
             const SizedBox(height: 16),
             ...result.items.map(_ResultTile.new),
             const SizedBox(height: 24),
-            FilledButton(
-              onPressed: () => _retry(context),
-              child: const Text('إعادة المحاولة'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).maybePop(),
-              child: const Text('خروج'),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              icon: const Icon(Icons.home),
+              child: const Text('العودة للرئيسية'),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _retry(BuildContext context) {
-    context.read<ExamCubit>().retryExam();
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: context.read<ExamCubit>(),
-          child: const InstructionsPage(),
         ),
       ),
     );

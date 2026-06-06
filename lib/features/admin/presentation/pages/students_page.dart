@@ -21,9 +21,11 @@ class _StudentsContentState extends State<StudentsContent> {
   bool _loading = true;
   String? _error;
   String _search = '';
+  String? _selectedBranch;
   int _page = 1;
   int _total = 0;
   static const int _pageSize = 25;
+  static const List<String> _branches = ['علمي', 'أدبي', 'شرعي', 'صناعي'];
 
   @override
   void initState() {
@@ -36,6 +38,7 @@ class _StudentsContentState extends State<StudentsContent> {
     try {
       final params = <String, dynamic>{'limit': _pageSize, 'page': _page};
       if (_search.isNotEmpty) params['search'] = _search;
+      if (_selectedBranch != null) params['branch'] = _selectedBranch;
       final r = await _dio.get<Map<String, dynamic>>('/admin/students', queryParameters: params);
       final responseData = r.data?['data'];
       List list;
@@ -82,18 +85,46 @@ class _StudentsContentState extends State<StudentsContent> {
           preferredSize: const Size.fromHeight(56),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'بحث بالاسم أو رقم الجلوس أو الموبايل...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-                isDense: true,
-                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-              ),
-              onSubmitted: (v) { _search = v; _page = 1; _loadStudents(); },
-              onChanged: (v) {
-                if (v.isEmpty && _search.isNotEmpty) { _search = ''; _page = 1; _loadStudents(); }
-              },
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: const InputDecoration(
+                      hintText: 'بحث بالاسم أو رقم الجلوس أو الموبايل...',
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    ),
+                    onSubmitted: (v) { _search = v; _page = 1; _loadStudents(); },
+                    onChanged: (v) {
+                      if (v.isEmpty && _search.isNotEmpty) { _search = ''; _page = 1; _loadStudents(); }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 140,
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedBranch,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                      hintText: 'الفرع',
+                    ),
+                    isExpanded: true,
+                    items: [
+                      const DropdownMenuItem<String>(value: null, child: Text('الكل')),
+                      ..._branches.map((b) => DropdownMenuItem(value: b, child: Text(b))),
+                    ],
+                    onChanged: (v) {
+                      setState(() { _selectedBranch = v; _page = 1; });
+                      _loadStudents();
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ),
