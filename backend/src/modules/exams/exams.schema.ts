@@ -11,10 +11,10 @@ const examBaseSchema = z.object({
   passingScore: z.number().int().min(1).max(100),
   allowedBranches: z.array(z.string().min(1)).min(1),
   maxAttempts: z.number().int().positive().default(1),
-  instructions: z.string().min(1),
+  instructions: z.string().default(""),
   showResults: z.boolean().default(false),
   showAnswers: z.boolean().default(false),
-  status: z.enum(['DRAFT', 'ACTIVE']).optional()
+  status: z.enum(['DRAFT', 'ACTIVE']).optional().nullable()
 });
 
 export const examCreateSchema = examBaseSchema.refine(

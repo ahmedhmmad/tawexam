@@ -420,7 +420,7 @@ class _ExamFormDialogState extends State<_ExamFormDialog> {
                   Expanded(child: TextFormField(controller: _maxAttempts, decoration: const InputDecoration(labelText: 'المحاولات'), keyboardType: TextInputType.number)),
                 ]),
                 const SizedBox(height: 8),
-                TextFormField(controller: _instructions, decoration: const InputDecoration(labelText: 'تعليمات الامتحان'), maxLines: 2, validator: (v) => (v ?? '').isEmpty ? 'مطلوب' : null),
+                TextFormField(controller: _instructions, decoration: const InputDecoration(labelText: 'تعليمات الامتحان (اختياري)'), maxLines: 2),
                 const SizedBox(height: 12),
 
                 SwitchListTile(title: const Text('إظهار النتيجة للطالب'), value: _showResults, onChanged: (v) => setState(() => _showResults = v), dense: true, contentPadding: EdgeInsets.zero),
