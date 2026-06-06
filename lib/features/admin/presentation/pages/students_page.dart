@@ -93,15 +93,17 @@ class _StudentsContentState extends State<StudentsContent> {
     if (confirm != true) return;
 
     setState(() => _loading = true);
-    int deleted = 0;
-    for (final id in _selected.toList()) {
-      try {
-        await _dio.delete<void>('/admin/students/$id');
-        deleted++;
-      } catch (_) {}
+    try {
+      final r = await _dio.post<Map<String, dynamic>>(
+        '/admin/students/bulk-delete',
+        data: {'ids': _selected.toList()},
+      );
+      final deleted = r.data?['data']?['deleted'] ?? 0;
+      _selected.clear();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$deleted students deleted')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
     }
-    _selected.clear();
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$deleted students deleted')));
     _loadStudents();
   }
 

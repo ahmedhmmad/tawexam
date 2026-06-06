@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { sendSuccess } from "../../utils/api-response.js";
 import { AuditLogService } from "../../utils/audit-log.service.js";
 import { StudentsService } from "./students.service.js";
+import { prisma } from "../../config/prisma.js";
 
 const studentsService = new StudentsService();
 
@@ -45,6 +46,22 @@ export class StudentsController {
       targetId: req.params.id as string
     });
     return sendSuccess(res, { deleted: true }, "Student deleted");
+  }
+
+  async bulkDelete(req: Request, res: Response): Promise<Response> {
+    const ids = req.body.ids as string[];
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, error: { code: "INVALID_BODY", message: "ids array required" } });
+    }
+    const { count } = await prisma.student.deleteMany({ where: { id: { in: ids } } });
+    await AuditLogService.log({
+      adminId: req.user!.id,
+      action: "BULK_DELETE",
+      targetEntity: "Student",
+      targetId: "bulk",
+      payload: { count, ids: ids.slice(0, 10) }
+    });
+    return sendSuccess(res, { deleted: count }, `${count} students deleted`);
   }
 
   async import(req: Request, res: Response): Promise<Response> {
