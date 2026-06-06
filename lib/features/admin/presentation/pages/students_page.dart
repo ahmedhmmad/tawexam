@@ -313,6 +313,7 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
   late final TextEditingController _seatNumber;
   late final TextEditingController _fullName;
   late final TextEditingController _mobileNo;
+  late final TextEditingController _branch;
   late final TextEditingController _password;
   bool _submitting = false;
 
@@ -324,11 +325,12 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
     _seatNumber = TextEditingController(text: widget.student?['seatNumber'] as String? ?? '');
     _fullName = TextEditingController(text: widget.student?['fullName'] as String? ?? '');
     _mobileNo = TextEditingController(text: widget.student?['mobileNo'] as String? ?? '');
+    _branch = TextEditingController(text: widget.student?['branch'] as String? ?? '');
     _password = TextEditingController();
   }
 
   @override
-  void dispose() { _seatNumber.dispose(); _fullName.dispose(); _mobileNo.dispose(); _password.dispose(); super.dispose(); }
+  void dispose() { _seatNumber.dispose(); _fullName.dispose(); _mobileNo.dispose(); _branch.dispose(); _password.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -344,6 +346,8 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
             TextFormField(controller: _fullName, decoration: const InputDecoration(labelText: 'الاسم الكامل'), validator: (v) => (v ?? '').isEmpty ? 'مطلوب' : null),
             const SizedBox(height: 8),
             TextFormField(controller: _mobileNo, decoration: const InputDecoration(labelText: 'رقم الموبايل'), keyboardType: TextInputType.phone),
+            const SizedBox(height: 8),
+            TextFormField(controller: _branch, decoration: const InputDecoration(labelText: 'الفرع', hintText: 'علمي، أدبي...')),
             const SizedBox(height: 8),
             TextFormField(controller: _password, decoration: InputDecoration(labelText: _isEditing ? 'كلمة مرور جديدة (اتركها فارغة للإبقاء)' : 'كلمة المرور (افتراضي = الموبايل)')),
           ]),
@@ -361,12 +365,13 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
     setState(() => _submitting = true);
     try {
       if (_isEditing) {
-        final body = <String, dynamic>{'seatNumber': _seatNumber.text, 'fullName': _fullName.text, 'mobileNo': _mobileNo.text};
+        final body = <String, dynamic>{'seatNumber': _seatNumber.text, 'fullName': _fullName.text, 'mobileNo': _mobileNo.text, 'branch': _branch.text};
         if (_password.text.isNotEmpty) body['password'] = _password.text;
         await widget.dio.put<void>('/admin/students/${widget.student!['id']}', data: body);
       } else {
         await widget.dio.post<void>('/admin/students', data: {
           'seatNumber': _seatNumber.text, 'fullName': _fullName.text, 'mobileNo': _mobileNo.text,
+          'branch': _branch.text,
           'password': _password.text.isNotEmpty ? _password.text : _mobileNo.text,
         });
       }

@@ -54,7 +54,7 @@ export class ExamsRepository {
         status: { in: [ExamStatus.SCHEDULED, ExamStatus.ACTIVE] },
         startAt: { lte: now },
         endAt: { gte: now },
-        allowedBranches: { has: branch }
+        ...(branch ? { allowedBranches: { has: branch } } : {})
       },
       include: {
         questions: {

@@ -13,16 +13,55 @@ class InstructionsPage extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(title: const Text('تعليمات الامتحان')),
+        appBar: AppBar(title: const Text('الامتحانات')),
         body: BlocBuilder<ExamCubit, ExamState>(
           builder: (context, state) {
             return switch (state) {
               ExamLoading() => const Center(child: CircularProgressIndicator()),
               ExamReady ready => _InstructionsContent(ready: ready),
-              ExamError(:final message) => Center(child: Text(message)),
-              _ => const Center(child: Text('لا يوجد امتحان متاح حالياً')),
+              ExamError() => const _NoExamView(),
+              _ => const _NoExamView(),
             };
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _NoExamView extends StatelessWidget {
+  const _NoExamView({this.onRetry});
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.assignment_outlined, size: 80, color: Colors.grey.shade400),
+            const SizedBox(height: 24),
+            Text(
+              'لا يوجد امتحانات لعرضها',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.grey.shade700),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'لا يوجد امتحان متاح لك حالياً.\nسيظهر الامتحان هنا عند اقتراب موعده.',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade500),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            if (onRetry != null)
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('إعادة المحاولة'),
+              ),
+          ],
         ),
       ),
     );
@@ -39,20 +78,79 @@ class _InstructionsContent extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        Text(
-          ready.exam.displayName,
-          style: Theme.of(context).textTheme.headlineSmall,
+        // Exam card
+        Card(
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.assignment, color: Color(0xFF1E40AF), size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        ready.exam.displayName,
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _InfoRow(icon: Icons.timer, label: 'مدة الامتحان', value: '${ready.exam.duration.inMinutes} دقيقة'),
+                const SizedBox(height: 8),
+                _InfoRow(icon: Icons.quiz, label: 'عدد الأسئلة', value: '${ready.questions.length} سؤال'),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 12),
-        Text('مدة الامتحان: ${ready.exam.duration.inMinutes} دقيقة'),
-        Text('عدد الأسئلة: ${ready.questions.length}'),
         const SizedBox(height: 24),
-        ...ready.exam.instructions.map(_RuleTile.new),
+
+        // Instructions
+        if (ready.exam.instructions.isNotEmpty) ...[
+          Text('تعليمات الامتحان:', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          ...ready.exam.instructions.map(_RuleTile.new),
+          const SizedBox(height: 24),
+        ],
+
+        // General rules
+        Card(
+          color: Colors.amber.shade50,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.amber.shade800),
+                    const SizedBox(width: 8),
+                    Text('ملاحظات مهمة', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade800)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text('• لا يمكن إيقاف المؤقت بعد بدء الامتحان'),
+                const Text('• يتم حفظ إجاباتك تلقائياً'),
+                const Text('• يمكنك التنقل بين الأسئلة بحرية'),
+                const Text('• سيتم تسليم الامتحان تلقائياً عند انتهاء الوقت'),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: 32),
+
+        // Start button
         FilledButton.icon(
           onPressed: () => _startExam(context),
           icon: const Icon(Icons.play_arrow),
-          label: const Text('بدء الامتحان'),
+          label: const Text('بدء الامتحان', style: TextStyle(fontSize: 18)),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         ),
       ],
     );
@@ -72,17 +170,41 @@ class _InstructionsContent extends StatelessWidget {
   }
 }
 
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.icon, required this.label, required this.value});
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.grey.shade600),
+        const SizedBox(width: 8),
+        Text('$label: ', style: TextStyle(color: Colors.grey.shade600)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+}
+
 class _RuleTile extends StatelessWidget {
   const _RuleTile(this.text);
-
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.check_circle_outline),
-      title: Text(text),
-      contentPadding: EdgeInsets.zero,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.check_circle, size: 20, color: Colors.green.shade600),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text)),
+        ],
+      ),
     );
   }
 }
