@@ -335,8 +335,8 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
   late final TextEditingController _seatNumber;
   late final TextEditingController _fullName;
   late final TextEditingController _mobileNo;
-  late final TextEditingController _branch;
   late final TextEditingController _password;
+  String? _selectedBranch;
   bool _submitting = false;
 
   bool get _isEditing => widget.student != null;
@@ -347,12 +347,13 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
     _seatNumber = TextEditingController(text: widget.student?['seatNumber'] as String? ?? '');
     _fullName = TextEditingController(text: widget.student?['fullName'] as String? ?? '');
     _mobileNo = TextEditingController(text: widget.student?['mobileNo'] as String? ?? '');
-    _branch = TextEditingController(text: widget.student?['branch'] as String? ?? '');
     _password = TextEditingController();
+    final b = widget.student?['branch'] as String? ?? '';
+    _selectedBranch = const ['علمي', 'أدبي', 'شرعي', 'صناعي'].contains(b) ? b : null;
   }
 
   @override
-  void dispose() { _seatNumber.dispose(); _fullName.dispose(); _mobileNo.dispose(); _branch.dispose(); _password.dispose(); super.dispose(); }
+  void dispose() { _seatNumber.dispose(); _fullName.dispose(); _mobileNo.dispose(); _password.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -371,15 +372,16 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
               TextFormField(controller: _mobileNo, decoration: const InputDecoration(labelText: 'رقم الموبايل'), keyboardType: TextInputType.phone),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _branch.text.isNotEmpty ? _branch.text : null,
+                value: _selectedBranch,
                 decoration: const InputDecoration(labelText: 'الفرع'),
+                validator: (v) => (v == null || v.isEmpty) ? 'اختر الفرع' : null,
                 items: const [
                   DropdownMenuItem(value: 'علمي', child: Text('علمي')),
                   DropdownMenuItem(value: 'أدبي', child: Text('أدبي')),
                   DropdownMenuItem(value: 'شرعي', child: Text('شرعي')),
                   DropdownMenuItem(value: 'صناعي', child: Text('صناعي')),
                 ],
-                onChanged: (v) => _branch.text = v ?? '',
+                onChanged: (v) => setState(() => _selectedBranch = v),
               ),
               const SizedBox(height: 8),
               TextFormField(controller: _password, decoration: InputDecoration(labelText: _isEditing ? 'كلمة مرور جديدة (اتركها فارغة للإبقاء)' : 'كلمة المرور (افتراضي = الموبايل)')),
@@ -399,13 +401,13 @@ class _StudentFormDialogState extends State<_StudentFormDialog> {
     setState(() => _submitting = true);
     try {
       if (_isEditing) {
-        final body = <String, dynamic>{'seatNumber': _seatNumber.text, 'fullName': _fullName.text, 'mobileNo': _mobileNo.text, 'branch': _branch.text};
+        final body = <String, dynamic>{'seatNumber': _seatNumber.text, 'fullName': _fullName.text, 'mobileNo': _mobileNo.text, 'branch': _selectedBranch ?? ''};
         if (_password.text.isNotEmpty) body['password'] = _password.text;
         await widget.dio.put<void>('/admin/students/${widget.student!['id']}', data: body);
       } else {
         await widget.dio.post<void>('/admin/students', data: {
           'seatNumber': _seatNumber.text, 'fullName': _fullName.text, 'mobileNo': _mobileNo.text,
-          'branch': _branch.text,
+          'branch': _selectedBranch ?? '',
           'password': _password.text.isNotEmpty ? _password.text : _mobileNo.text,
         });
       }

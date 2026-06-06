@@ -1,44 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:workmanager/workmanager.dart';
 
 import 'core/di/service_locator.dart';
 import 'core/network/token_provider.dart';
 import 'core/storage/local_storage_service.dart';
-import 'core/sync/sync_service.dart';
 import 'features/auth/domain/entities/student.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/exam/presentation/cubit/exam_cubit.dart';
 import 'features/exam/presentation/pages/student_home_page.dart';
 
-const _syncTaskName = 'com.tawexam.backgroundSync';
 const _studentCacheKey = 'cached_student';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
-  Workmanager().executeTask((task, inputData) async {
-    if (task == _syncTaskName || task == Workmanager.iOSBackgroundTask) {
-      try {
-        final service = getIt<SyncService>();
-        await service.syncPending();
-      } catch (_) {}
-    }
-    return true;
-  });
+  // Background sync - no-op for now
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await configureDependencies();
-  await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
-  await Workmanager().registerPeriodicTask(
-    _syncTaskName,
-    _syncTaskName,
-    frequency: const Duration(minutes: 15),
-    constraints: Constraints(networkType: NetworkType.connected),
-    existingWorkPolicy: ExistingWorkPolicy.keep,
-  );
 
   // Check for saved session
   final savedStudent = await _loadCachedStudent();

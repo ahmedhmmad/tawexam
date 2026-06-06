@@ -1,11 +1,11 @@
 {
-    "name": "taw_exam",
-    "short_name": "taw_exam",
+    "name": "توجيهي - منصة الامتحانات",
+    "short_name": "توجيهي",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1E40AF",
+    "theme_color": "#1E40AF",
+    "description": "منصة امتحانات التوجيهي الإلكترونية",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

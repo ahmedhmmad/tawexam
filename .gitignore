@@ -54,3 +54,9 @@ app.*.map.json
 
 DEPLOYMENT.md
 .env.example
+
+# Signing
+android/key.properties
+keystore/
+*.jks
+*.keystore

@@ -408,6 +408,8 @@ class _StudentHomePageState extends State<StudentHomePage> {
 
   void _startExamFlow(BuildContext context) {
     final cubit = context.read<ExamCubit>();
+    // Reload exam + questions fresh before navigating
+    cubit.loadForStudent(student: widget.student);
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => BlocProvider.value(

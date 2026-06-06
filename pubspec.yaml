@@ -1,7 +1,7 @@
 name: taw_exam
 description: "Offline-first Tawjihi exam training platform."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.10.8
@@ -29,6 +29,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   mocktail: ^1.0.4
   bloc_test: ^9.1.7
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
