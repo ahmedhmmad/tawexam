@@ -29,6 +29,11 @@ class TawExamAdminApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E40AF)),
         useMaterial3: true,
       ),
+      locale: const Locale('ar'),
+      builder: (context, child) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: child!,
+      ),
       home: BlocProvider(
         create: (_) => getIt<AdminAuthCubit>()..checkSession(),
         child: const _AuthGate(),

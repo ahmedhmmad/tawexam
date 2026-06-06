@@ -1,5 +1,6 @@
 import http from "node:http";
 
+import compression from "compression";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -42,6 +43,7 @@ monitoringService.getNamespace().on("connection", (socket) => {
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 app.use(requestId);
+app.use(compression());
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGIN === "*" ? true : env.CORS_ORIGIN, credentials: true }));
 app.use(express.json({ limit: "1mb" }));
@@ -49,7 +51,10 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(morgan("combined", { stream: { write: (message) => logger.info(message.trim()) } }));
 app.use(globalRateLimiter);
 
-app.get("/health", (_req, res) => sendSuccess(res, { status: "ok" }));
+app.get("/health", (_req, res) => {
+  res.setHeader("Cache-Control", "no-cache");
+  return sendSuccess(res, { status: "ok" });
+});
 
 app.use(`${env.API_PREFIX}/auth`, studentAuthRouter);
 app.use(`${env.API_PREFIX}/admin/auth`, adminAuthRouter);

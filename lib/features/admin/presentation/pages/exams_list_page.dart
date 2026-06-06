@@ -9,26 +9,49 @@ import '../cubit/exam_manager_state.dart';
 import 'question_upload_page.dart';
 import 'questions_page.dart';
 
-class ExamsListContent extends StatelessWidget {
+class ExamsListContent extends StatefulWidget {
   const ExamsListContent({super.key});
+
+  @override
+  State<ExamsListContent> createState() => _ExamsListContentState();
+}
+
+class _ExamsListContentState extends State<ExamsListContent> {
+  String _search = '';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Exams'),
+        title: const Text('الامتحانات'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            tooltip: 'Create Exam',
+            tooltip: 'إنشاء امتحان',
             onPressed: () => _showCreateDialog(context),
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
+            tooltip: 'تحديث',
             onPressed: () => context.read<ExamManagerCubit>().load(),
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'بحث بالاسم أو الحالة...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              ),
+              onChanged: (v) => setState(() => _search = v.toLowerCase()),
+            ),
+          ),
+        ),
       ),
       body: BlocConsumer<ExamManagerCubit, ExamManagerState>(
         listener: (ctx, state) {
@@ -41,18 +64,25 @@ class ExamsListContent extends StatelessWidget {
         builder: (ctx, state) => switch (state) {
           ExamManagerLoading() =>
             const Center(child: CircularProgressIndicator()),
-          ExamManagerLoaded(:final exams) => exams.isEmpty
-              ? const Center(child: Text('No exams yet. Tap + to create one.'))
-              : _ExamsList(exams: exams),
+          ExamManagerLoaded(:final exams) => () {
+            final filtered = _search.isEmpty ? exams : exams.where((e) =>
+              e.subjectNameAr.toLowerCase().contains(_search) ||
+              e.subjectNameEn.toLowerCase().contains(_search) ||
+              e.status.toLowerCase().contains(_search)
+            ).toList();
+            return filtered.isEmpty
+                ? const Center(child: Text('لا توجد امتحانات.'))
+                : _ExamsList(exams: filtered);
+          }(),
           ExamManagerError(:final message) => Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Error: $message'),
+                  Text('خطأ: $message'),
                   const SizedBox(height: 16),
                   FilledButton(
                     onPressed: () => ctx.read<ExamManagerCubit>().load(),
-                    child: const Text('Retry'),
+                    child: const Text('إعادة المحاولة'),
                   ),
                 ],
               ),

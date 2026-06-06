@@ -49,17 +49,29 @@ export class StudentsController {
   }
 
   async bulkDelete(req: Request, res: Response): Promise<Response> {
-    const ids = req.body.ids as string[];
-    if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ success: false, error: { code: "INVALID_BODY", message: "ids array required" } });
+    const { ids, search } = req.body;
+
+    let count: number;
+    if (ids === 'all') {
+      // Delete all matching search filter
+      const where = search
+        ? { OR: [{ fullName: { contains: search, mode: 'insensitive' as const } }, { seatNumber: { contains: search, mode: 'insensitive' as const } }] }
+        : {};
+      const result = await prisma.student.deleteMany({ where });
+      count = result.count;
+    } else if (Array.isArray(ids) && ids.length > 0) {
+      const result = await prisma.student.deleteMany({ where: { id: { in: ids } } });
+      count = result.count;
+    } else {
+      return res.status(400).json({ success: false, error: { code: "INVALID_BODY", message: "ids array or 'all' required" } });
     }
-    const { count } = await prisma.student.deleteMany({ where: { id: { in: ids } } });
+
     await AuditLogService.log({
       adminId: req.user!.id,
       action: "BULK_DELETE",
       targetEntity: "Student",
       targetId: "bulk",
-      payload: { count, ids: ids.slice(0, 10) }
+      payload: { count, search: search || null }
     });
     return sendSuccess(res, { deleted: count }, `${count} students deleted`);
   }

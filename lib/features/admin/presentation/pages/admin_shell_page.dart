@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../cubit/admin_auth_cubit.dart';
 import '../cubit/exam_manager_cubit.dart';
 import '../cubit/student_manager_cubit.dart';
 import 'exams_list_page.dart';
@@ -19,12 +20,9 @@ class _AdminShellPageState extends State<AdminShellPage> {
   int _index = 0;
 
   static const _destinations = [
-    NavigationRailDestination(
-        icon: Icon(Icons.assignment), label: Text('Exams')),
-    NavigationRailDestination(
-        icon: Icon(Icons.people), label: Text('Students')),
-    NavigationRailDestination(
-        icon: Icon(Icons.bar_chart), label: Text('Results')),
+    NavigationRailDestination(icon: Icon(Icons.assignment), label: Text('الامتحانات')),
+    NavigationRailDestination(icon: Icon(Icons.people), label: Text('الطلاب')),
+    NavigationRailDestination(icon: Icon(Icons.bar_chart), label: Text('النتائج')),
   ];
 
   @override
@@ -37,6 +35,19 @@ class _AdminShellPageState extends State<AdminShellPage> {
             onDestinationSelected: (i) => setState(() => _index = i),
             labelType: NavigationRailLabelType.all,
             destinations: _destinations,
+            trailing: Expanded(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: IconButton(
+                    icon: const Icon(Icons.logout),
+                    tooltip: 'تسجيل الخروج',
+                    onPressed: () => context.read<AdminAuthCubit>().logout(),
+                  ),
+                ),
+              ),
+            ),
           ),
           const VerticalDivider(thickness: 1, width: 1),
           Expanded(child: _buildPage()),
@@ -58,7 +69,7 @@ class _AdminShellPageState extends State<AdminShellPage> {
           child: const StudentsContent(),
         );
       default:
-        return const Center(child: Text('Results — coming soon'));
+        return const Center(child: Text('النتائج — قريباً'));
     }
   }
 }
