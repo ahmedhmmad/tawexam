@@ -63,7 +63,9 @@ export class SessionsService {
 
   async getStudentSession(examId: string, studentId: string) {
     const session = await this.repository.findByStudentAndExam(studentId, examId);
-    if (!session) {
+    // If no session exists, or the last session is not IN_PROGRESS (expired/submitted),
+    // try to create a new one
+    if (!session || session.status !== 'IN_PROGRESS') {
       return this.getOrCreateSession(examId, studentId);
     }
     return { ...session, serverTime: new Date() };
