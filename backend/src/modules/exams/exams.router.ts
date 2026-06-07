@@ -13,6 +13,7 @@ const controller = new ExamsController();
 export const studentExamsRouter = Router();
 studentExamsRouter.use(authenticate);
 studentExamsRouter.get("/current", asyncHandler(controller.current));
+studentExamsRouter.get("/available", asyncHandler(controller.available));
 studentExamsRouter.get("/history", asyncHandler(controller.history));
 studentExamsRouter.get("/:id/questions", validateParams(examIdSchema), asyncHandler(controller.studentQuestions));
 studentExamsRouter.post("/:id/submit", validateParams(examIdSchema), asyncHandler(controller.submit));

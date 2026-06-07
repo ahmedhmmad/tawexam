@@ -110,13 +110,56 @@ export class ExamsService {
       throw new AppError("No active exam available", 404, "EXAM_NOT_AVAILABLE");
     }
 
-    // Return first exam for backward compatibility with mobile app single-exam view
-    // But also return all in a list
-    return result.length === 1 ? result[0] : result;
+    // Always return a single object (first available exam)
+    // The mobile app's exam flow works with one exam at a time
+    return result[0];
   }
 
   async studentHistory(studentId: string) {
     return this.repository.getStudentHistory(studentId);
+  }
+
+  async availableForStudent(studentId: string) {
+    const student = await this.repository.findStudentById(studentId);
+    if (!student) {
+      throw new AppError("Student not found", 404, "STUDENT_NOT_FOUND");
+    }
+
+    const exams = await this.repository.findCurrentExamForBranch(student.branch, new Date());
+    if (!exams || exams.length === 0) {
+      return [];
+    }
+
+    const now = new Date();
+    const result = [];
+
+    for (const exam of exams) {
+      const attemptCount = await this.sessionsService.getAttemptCount(exam.id, studentId);
+      if (exam.status === 'ACTIVE' && attemptCount >= exam.maxAttempts) {
+        continue;
+      }
+      if (exam.status === 'ACTIVE' && exam.endAt.getTime() < now.getTime()) {
+        continue;
+      }
+
+      result.push({
+        id: exam.id,
+        subjectNameAr: exam.subjectNameAr,
+        subjectNameEn: exam.subjectNameEn,
+        examDate: exam.examDate,
+        startAt: exam.startAt,
+        endAt: exam.endAt,
+        durationMinutes: exam.durationMinutes,
+        totalQuestions: exam.questions.length,
+        passingScore: exam.passingScore,
+        instructions: exam.instructions,
+        maxAttempts: exam.maxAttempts,
+        currentAttempt: attemptCount + 1,
+        status: exam.status
+      });
+    }
+
+    return result;
   }
 
   async studentQuestions(examId: string, studentId: string) {

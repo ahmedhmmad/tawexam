@@ -50,17 +50,14 @@ class _StudentHomePageState extends State<StudentHomePage> {
   Future<void> _loadExams() async {
     setState(() { _loading = true; _error = null; });
     try {
-      // Load current exam(s)
+      // Load available exams for display
       try {
-        final r = await _dio.get<Map<String, dynamic>>('/exam/current');
-        final data = r.data?['data'];
+        final r = await _dio.get<dynamic>('/exam/available');
+        final body = r.data is Map ? r.data as Map<String, dynamic> : <String, dynamic>{};
+        final data = body['data'];
         if (data is List && data.isNotEmpty) {
-          // Multiple exams returned — show all as cards
-          _currentExam = data.first as Map<String, dynamic>?;
           _allExams = data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-        } else if (data is Map) {
-          _currentExam = Map<String, dynamic>.from(data);
-          _allExams = [_currentExam!];
+          _currentExam = _allExams.first;
         } else {
           _currentExam = null;
           _allExams = [];
@@ -72,12 +69,10 @@ class _StudentHomePageState extends State<StudentHomePage> {
         } else {
           _currentExam = null;
           _allExams = [];
-          _error = 'exam: ${e.response?.statusCode} ${e.message}';
         }
       } catch (e) {
         _currentExam = null;
         _allExams = [];
-        _error = 'exam-err: $e';
       }
 
       // Load past exams - optional

@@ -25,7 +25,7 @@ class ResultPage extends StatelessWidget {
             FilledButton.icon(
               onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
               icon: const Icon(Icons.home),
-              child: const Text('العودة للرئيسية'),
+              label: const Text('العودة للرئيسية'),
             ),
           ],
         ),
