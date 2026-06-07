@@ -19,7 +19,7 @@ class InstructionsPage extends StatelessWidget {
             return switch (state) {
               ExamLoading() => const Center(child: CircularProgressIndicator()),
               ExamReady ready => _InstructionsContent(ready: ready),
-              ExamError() => const _NoExamView(),
+              ExamError(:final message) => _NoExamView(error: message),
               _ => const _NoExamView(),
             };
           },
@@ -30,8 +30,9 @@ class InstructionsPage extends StatelessWidget {
 }
 
 class _NoExamView extends StatelessWidget {
-  const _NoExamView({this.onRetry});
+  const _NoExamView({this.onRetry, this.error});
   final VoidCallback? onRetry;
+  final String? error;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +49,10 @@ class _NoExamView extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.grey.shade700),
               textAlign: TextAlign.center,
             ),
+            if (error != null) ...[
+              const SizedBox(height: 12),
+              Text(error!, style: TextStyle(color: Colors.red.shade700, fontSize: 13), textAlign: TextAlign.center),
+            ],
             const SizedBox(height: 12),
             Text(
               'لا يوجد امتحان متاح لك حالياً.\nسيظهر الامتحان هنا عند اقتراب موعده.',
