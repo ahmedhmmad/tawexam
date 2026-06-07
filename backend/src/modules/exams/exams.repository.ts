@@ -174,4 +174,16 @@ export class ExamsRepository {
       data: { status, submittedAt }
     });
   }
+
+  async saveAnswersBatch(sessionId: string, answers: Record<string, string>) {
+    // Upsert each answer - saves or updates existing answers for the session
+    const ops = Object.entries(answers).map(([questionId, choiceId]) =>
+      prisma.answer.upsert({
+        where: { sessionId_questionId: { sessionId, questionId } },
+        create: { sessionId, questionId, choiceId, synced: true },
+        update: { choiceId, synced: true }
+      })
+    );
+    return prisma.$transaction(ops);
+  }
 }

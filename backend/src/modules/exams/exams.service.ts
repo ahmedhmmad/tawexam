@@ -210,9 +210,14 @@ export class ExamsService {
     return this.repository.update(id, { status });
   }
 
-  async submitExam(examId: string, studentId: string) {
+  async submitExam(examId: string, studentId: string, answers?: Record<string, string>) {
     const session = await this.sessionsService.getStudentSession(examId, studentId);
     const expiredSession = await this.sessionsService.expireIfNeeded(session.id);
+
+    // Save answers from client before grading (ensures answers aren't lost if sync failed)
+    if (answers && Object.keys(answers).length > 0) {
+      await this.repository.saveAnswersBatch(session.id, answers);
+    }
 
     const finalSession =
       expiredSession.status === SessionStatus.IN_PROGRESS
