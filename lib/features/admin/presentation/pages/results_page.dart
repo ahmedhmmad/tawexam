@@ -168,20 +168,36 @@ class _ResultsPageState extends State<ResultsPage> {
             DataColumn(label: Text('الاسم', style: TextStyle(fontWeight: FontWeight.bold))),
             DataColumn(label: Text('رقم الجلوس', style: TextStyle(fontWeight: FontWeight.bold))),
             DataColumn(label: Text('الفرع', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('الحالة', style: TextStyle(fontWeight: FontWeight.bold))),
             DataColumn(label: Text('العلامة', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
             DataColumn(label: Text('الصحيح/الكلي', style: TextStyle(fontWeight: FontWeight.bold))),
             DataColumn(label: Text('الوقت', style: TextStyle(fontWeight: FontWeight.bold))),
           ],
-          rows: _results.map((r) {
+          rows: _results.asMap().entries.map((entry) {
+            final i = entry.key;
+            final r = entry.value;
             final timeSec = (r['timeTakenSeconds'] as int?) ?? 0;
             final timeMin = (timeSec / 60).floor();
             final timeSec2 = timeSec % 60;
-            final timeStr = '${timeMin}د ${timeSec2}ث';
-            return DataRow(cells: [
+            final timeStr = timeSec > 0 ? '${timeMin}د ${timeSec2}ث' : '-';
+            final score = r['score'];
+            final status = r['status'] as String? ?? '';
+            final statusAr = switch(status) {
+              'SUBMITTED' => 'مسلّم',
+              'IN_PROGRESS' => 'جارٍ',
+              'EXPIRED' => 'منتهي',
+              'FORCE_ENDED' => 'أُنهي',
+              _ => status,
+            };
+            final bgColor = i.isEven ? Colors.white : Colors.blue.shade50;
+            return DataRow(
+              color: WidgetStateProperty.all(bgColor),
+              cells: [
               DataCell(Text(r['studentName'] as String? ?? '')),
               DataCell(Text(r['seatNumber'] as String? ?? '')),
               DataCell(Text(r['branch'] as String? ?? '')),
-              DataCell(Text('${r['score'] ?? 0}%')),
+              DataCell(Text(statusAr)),
+              DataCell(Text(score != null ? '$score%' : '-')),
               DataCell(Text('${r['correctCount'] ?? 0} / ${r['totalQuestions'] ?? 0}')),
               DataCell(Text(timeStr)),
             ]);

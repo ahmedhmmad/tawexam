@@ -65,18 +65,30 @@ export class ResultsService {
   }
 
   async listResults(examId: string) {
-    const results = await this.repository.listForExport(examId);
-    return results.map(r => ({
-      studentName: r.session.student.fullName,
-      seatNumber: r.session.student.seatNumber,
-      branch: r.session.student.branch,
-      score: r.score,
-      totalQuestions: r.totalQuestions,
-      correctCount: r.correctCount,
-      answeredCount: r.answeredCount,
-      timeTakenSeconds: r.timeTakenSeconds,
-      gradedAt: r.gradedAt
-    }));
+    // Get graded results
+    const graded = await this.repository.listForExport(examId);
+
+    // Also get all sessions (including ungraded/in-progress)
+    const sessions = await this.repository.listSessionsWithStudents(examId);
+
+    // Merge: prefer graded results, fall back to session data
+    const gradedMap = new Map(graded.map(r => [r.session.studentId, r]));
+
+    return sessions.map(s => {
+      const result = gradedMap.get(s.studentId);
+      return {
+        studentName: s.student.fullName,
+        seatNumber: s.student.seatNumber,
+        branch: s.student.branch,
+        score: result?.score ?? null,
+        totalQuestions: result?.totalQuestions ?? 0,
+        correctCount: result?.correctCount ?? 0,
+        answeredCount: result?.answeredCount ?? s.answers.length,
+        timeTakenSeconds: result?.timeTakenSeconds ?? 0,
+        status: s.status,
+        gradedAt: result?.gradedAt ?? null
+      };
+    });
   }
 
   async exportExamResults(examId: string): Promise<Buffer> {

@@ -69,5 +69,16 @@ export class ResultsRepository {
       orderBy: { gradedAt: "desc" }
     });
   }
+
+  listSessionsWithStudents(examId: string) {
+    return prisma.examSession.findMany({
+      where: { examId },
+      include: {
+        student: true,
+        answers: true
+      },
+      orderBy: { startedAt: "desc" }
+    });
+  }
 }
 
