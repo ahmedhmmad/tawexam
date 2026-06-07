@@ -53,7 +53,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
       // Load available exams for display
       try {
         final r = await _dio.get<dynamic>('/exam/available');
-        final body = r.data is Map ? r.data as Map<String, dynamic> : <String, dynamic>{};
+        final body = r.data is Map ? Map<String, dynamic>.from(r.data as Map) : <String, dynamic>{};
         final data = body['data'];
         if (data is List && data.isNotEmpty) {
           _allExams = data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
@@ -63,16 +63,15 @@ class _StudentHomePageState extends State<StudentHomePage> {
           _allExams = [];
         }
       } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          _currentExam = null;
-          _allExams = [];
-        } else {
-          _currentExam = null;
-          _allExams = [];
+        _currentExam = null;
+        _allExams = [];
+        if (e.response?.statusCode != 404) {
+          _error = '${e.response?.statusCode}: ${e.message}';
         }
       } catch (e) {
         _currentExam = null;
         _allExams = [];
+        _error = '$e';
       }
 
       // Load past exams - optional
