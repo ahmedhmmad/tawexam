@@ -30,36 +30,18 @@ class _ResultsPageState extends State<ResultsPage> {
   }
 
   Future<void> _loadResults() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    setState(() { _loading = true; _error = null; });
     try {
-      final r = await _dio.get<Map<String, dynamic>>(
-        '/admin/exams/${widget.examId}/results',
-      );
-      final responseData = r.data?['data'];
-      List list;
-      if (responseData is Map && responseData['results'] is List) {
-        list = responseData['results'] as List;
-      } else if (responseData is List) {
-        list = responseData;
-      } else if (responseData is Map && responseData['data'] is List) {
-        list = responseData['data'] as List;
-      } else {
-        list = [];
-      }
+      final r = await _dio.get<dynamic>('/admin/exams/${widget.examId}/results/list');
+      final body = r.data is Map ? Map<String, dynamic>.from(r.data as Map) : <String, dynamic>{};
+      final data = body['data'];
+      List list = data is List ? data : [];
       setState(() {
-        _results = list
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
+        _results = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
         _loading = false;
       });
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+      setState(() { _error = e.toString(); _loading = false; });
     }
   }
 
@@ -185,20 +167,23 @@ class _ResultsPageState extends State<ResultsPage> {
           columns: const [
             DataColumn(label: Text('الاسم', style: TextStyle(fontWeight: FontWeight.bold))),
             DataColumn(label: Text('رقم الجلوس', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('الفرع', style: TextStyle(fontWeight: FontWeight.bold))),
             DataColumn(label: Text('العلامة', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-            DataColumn(label: Text('الإجابات الصحيحة', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-            DataColumn(label: Text('الوقت المستغرق', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('الصحيح/الكلي', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('الوقت', style: TextStyle(fontWeight: FontWeight.bold))),
           ],
           rows: _results.map((r) {
-            final durationMinutes = r['durationMinutes'] ?? r['timeTaken'] ?? r['duration'] ?? 0;
-            final correctAnswers = r['correctAnswers'] ?? r['correct'] ?? 0;
-            final score = r['score'] ?? r['mark'] ?? r['totalScore'] ?? 0;
+            final timeSec = (r['timeTakenSeconds'] as int?) ?? 0;
+            final timeMin = (timeSec / 60).floor();
+            final timeSec2 = timeSec % 60;
+            final timeStr = '${timeMin}د ${timeSec2}ث';
             return DataRow(cells: [
-              DataCell(Text(r['studentName'] as String? ?? r['fullName'] as String? ?? '')),
+              DataCell(Text(r['studentName'] as String? ?? '')),
               DataCell(Text(r['seatNumber'] as String? ?? '')),
-              DataCell(Text('$score')),
-              DataCell(Text('$correctAnswers')),
-              DataCell(Text('$durationMinutes د')),
+              DataCell(Text(r['branch'] as String? ?? '')),
+              DataCell(Text('${r['score'] ?? 0}%')),
+              DataCell(Text('${r['correctCount'] ?? 0} / ${r['totalQuestions'] ?? 0}')),
+              DataCell(Text(timeStr)),
             ]);
           }).toList(),
         ),

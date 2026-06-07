@@ -64,6 +64,21 @@ export class ResultsService {
     return this.repository.analytics(examId);
   }
 
+  async listResults(examId: string) {
+    const results = await this.repository.listForExport(examId);
+    return results.map(r => ({
+      studentName: r.session.student.fullName,
+      seatNumber: r.session.student.seatNumber,
+      branch: r.session.student.branch,
+      score: r.score,
+      totalQuestions: r.totalQuestions,
+      correctCount: r.correctCount,
+      answeredCount: r.answeredCount,
+      timeTakenSeconds: r.timeTakenSeconds,
+      gradedAt: r.gradedAt
+    }));
+  }
+
   async exportExamResults(examId: string): Promise<Buffer> {
     const results = await this.repository.listForExport(examId);
     const workbook = xlsx.utils.book_new();

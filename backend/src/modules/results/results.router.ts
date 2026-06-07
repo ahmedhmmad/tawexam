@@ -17,5 +17,6 @@ studentResultsRouter.get("/:id/result", validateParams(examIdSchema), asyncHandl
 export const adminResultsRouter = Router();
 adminResultsRouter.use(authenticate, requireAdminRole([AdminRole.SUPER_ADMIN, AdminRole.EXAM_MANAGER, AdminRole.VIEWER]));
 adminResultsRouter.get("/:id/results", validateParams(examIdSchema), asyncHandler(controller.analytics));
+adminResultsRouter.get("/:id/results/list", validateParams(examIdSchema), asyncHandler(controller.list));
 adminResultsRouter.get("/:id/results/export", validateParams(examIdSchema), asyncHandler(controller.export));
 

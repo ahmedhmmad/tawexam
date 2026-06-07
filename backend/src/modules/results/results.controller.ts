@@ -47,6 +47,11 @@ export class ResultsController {
     return sendSuccess(res, result);
   }
 
+  async list(req: Request, res: Response): Promise<Response> {
+    const results = await resultsService.listResults(req.params.id as string);
+    return sendSuccess(res, results);
+  }
+
   async export(req: Request, res: Response): Promise<Response> {
     const buffer = await resultsService.exportExamResults(req.params.id as string);
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
