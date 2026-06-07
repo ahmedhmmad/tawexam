@@ -69,47 +69,50 @@ export class ExamsService {
       throw new AppError("Student not found", 404, "STUDENT_NOT_FOUND");
     }
 
-    const exam = await this.repository.findCurrentExamForBranch(student.branch, new Date());
-    if (!exam) {
-      throw new AppError("No active exam available", 404, "EXAM_NOT_AVAILABLE");
-    }
-
-    // Check if student has exhausted attempts (only for ACTIVE exams)
-    const attemptCount = await this.sessionsService.getAttemptCount(exam.id, studentId);
-    if (exam.status === 'ACTIVE' && attemptCount >= exam.maxAttempts) {
+    const exams = await this.repository.findCurrentExamForBranch(student.branch, new Date());
+    if (!exams || exams.length === 0) {
       throw new AppError("No active exam available", 404, "EXAM_NOT_AVAILABLE");
     }
 
     const now = new Date();
-    let remainingSeconds: number | null = null;
+    const result = [];
 
-    // Only calculate remaining time for ACTIVE exams within their window
-    if (exam.status === 'ACTIVE' && exam.startAt.getTime() <= now.getTime()) {
-      const examElapsedSeconds = Math.floor((now.getTime() - exam.startAt.getTime()) / 1000);
-      const examTotalSeconds = exam.durationMinutes * 60;
-      remainingSeconds = examTotalSeconds - examElapsedSeconds;
-
-      if (remainingSeconds <= 0) {
-        throw new AppError("No active exam available", 404, "EXAM_NOT_AVAILABLE");
+    for (const exam of exams) {
+      // Check if student has exhausted attempts (only for ACTIVE exams)
+      const attemptCount = await this.sessionsService.getAttemptCount(exam.id, studentId);
+      if (exam.status === 'ACTIVE' && attemptCount >= exam.maxAttempts) {
+        continue; // Skip this exam, student used all attempts
       }
+
+      // For ACTIVE exams, check if endAt has passed
+      if (exam.status === 'ACTIVE' && exam.endAt.getTime() < now.getTime()) {
+        continue; // Skip expired active exams
+      }
+
+      result.push({
+        id: exam.id,
+        subjectNameAr: exam.subjectNameAr,
+        subjectNameEn: exam.subjectNameEn,
+        examDate: exam.examDate,
+        startAt: exam.startAt,
+        endAt: exam.endAt,
+        durationMinutes: exam.durationMinutes,
+        totalQuestions: exam.questions.length,
+        passingScore: exam.passingScore,
+        instructions: exam.instructions,
+        maxAttempts: exam.maxAttempts,
+        currentAttempt: attemptCount + 1,
+        status: exam.status
+      });
     }
 
-    return {
-      id: exam.id,
-      subjectNameAr: exam.subjectNameAr,
-      subjectNameEn: exam.subjectNameEn,
-      examDate: exam.examDate,
-      startAt: exam.startAt,
-      endAt: exam.endAt,
-      durationMinutes: exam.durationMinutes,
-      totalQuestions: exam.questions.length,
-      passingScore: exam.passingScore,
-      instructions: exam.instructions,
-      maxAttempts: exam.maxAttempts,
-      currentAttempt: attemptCount + 1,
-      remainingSeconds,
-      status: exam.status
-    };
+    if (result.length === 0) {
+      throw new AppError("No active exam available", 404, "EXAM_NOT_AVAILABLE");
+    }
+
+    // Return first exam for backward compatibility with mobile app single-exam view
+    // But also return all in a list
+    return result.length === 1 ? result[0] : result;
   }
 
   async studentHistory(studentId: string) {

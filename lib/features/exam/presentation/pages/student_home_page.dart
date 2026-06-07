@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dio/dio.dart';
@@ -37,11 +36,10 @@ class StudentHomePage extends StatefulWidget {
 class _StudentHomePageState extends State<StudentHomePage> {
   final Dio _dio = getIt<ApiClient>().dio;
   Map<String, dynamic>? _currentExam;
+  List<Map<String, dynamic>> _allExams = [];
   List<Map<String, dynamic>> _pastExams = [];
   bool _loading = true;
   String? _error;
-  Timer? _countdownTimer;
-  Duration _countdown = Duration.zero;
 
   @override
   void initState() {
@@ -49,29 +47,36 @@ class _StudentHomePageState extends State<StudentHomePage> {
     _loadExams();
   }
 
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    super.dispose();
-  }
-
   Future<void> _loadExams() async {
     setState(() { _loading = true; _error = null; });
     try {
-      // Load current exam
+      // Load current exam(s)
       try {
         final r = await _dio.get<Map<String, dynamic>>('/exam/current');
-        _currentExam = r.data?['data'] as Map<String, dynamic>?;
-      } on DioException catch (e) {
-        // Show the actual error for debugging
-        if (e.response?.statusCode == 404) {
-          _currentExam = null;
+        final data = r.data?['data'];
+        if (data is List && data.isNotEmpty) {
+          // Multiple exams returned — show all as cards
+          _currentExam = data.first as Map<String, dynamic>?;
+          _allExams = data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        } else if (data is Map) {
+          _currentExam = Map<String, dynamic>.from(data);
+          _allExams = [_currentExam!];
         } else {
           _currentExam = null;
+          _allExams = [];
+        }
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          _currentExam = null;
+          _allExams = [];
+        } else {
+          _currentExam = null;
+          _allExams = [];
           _error = 'exam: ${e.response?.statusCode} ${e.message}';
         }
       } catch (e) {
         _currentExam = null;
+        _allExams = [];
         _error = 'exam-err: $e';
       }
 
@@ -84,43 +89,9 @@ class _StudentHomePageState extends State<StudentHomePage> {
         _pastExams = [];
       }
 
-      _startCountdownIfNeeded();
       setState(() => _loading = false);
     } catch (e) {
       setState(() { _error = 'load: $e'; _loading = false; });
-    }
-  }
-
-  void _startCountdownIfNeeded() {
-    _countdownTimer?.cancel();
-    _countdown = Duration.zero;
-    if (_currentExam == null) return;
-
-    final startAtStr = _currentExam!['startAt'] as String?;
-    final status = _currentExam!['status'] as String? ?? '';
-    if (startAtStr == null) return;
-
-    final startAt = DateTime.parse(startAtStr);
-    final now = DateTime.now().toUtc();
-
-    // For SCHEDULED exams, countdown to start time
-    // For ACTIVE exams that haven't started yet (rare), countdown too
-    if (startAt.isAfter(now) || status == 'SCHEDULED') {
-      final diff = startAt.difference(now);
-      if (diff.isNegative) return; // Already started
-      _countdown = diff;
-      _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (!mounted) return;
-        setState(() {
-          _countdown = _countdown - const Duration(seconds: 1);
-          if (_countdown.isNegative || _countdown == Duration.zero) {
-            _countdownTimer?.cancel();
-            _countdown = Duration.zero;
-            // Reload to get updated status
-            _loadExams();
-          }
-        });
-      });
     }
   }
 
@@ -211,8 +182,11 @@ class _StudentHomePageState extends State<StudentHomePage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        if (_currentExam != null)
-          _buildCurrentExamCard(context)
+        if (_allExams.isNotEmpty)
+          ..._allExams.map((exam) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildExamCard(context, exam),
+          ))
         else
           _buildNoExamCard(),
         if (_pastExams.isNotEmpty) ...[
@@ -250,8 +224,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
     );
   }
 
-  Widget _buildCurrentExamCard(BuildContext context) {
-    final exam = _currentExam!;
+  Widget _buildExamCard(BuildContext context, Map<String, dynamic> exam) {
     final name = exam['subjectNameAr'] ?? exam['subjectNameEn'] ?? '';
     final duration = exam['durationMinutes'] ?? 0;
     final questions = exam['totalQuestions'] ?? 0;
@@ -260,9 +233,8 @@ class _StudentHomePageState extends State<StudentHomePage> {
     final status = exam['status'] as String? ?? 'ACTIVE';
     final isScheduled = status == 'SCHEDULED';
     final isActive = status == 'ACTIVE';
-    final hasCountdown = _countdown.inSeconds > 0;
-    // Can only start if ACTIVE and no countdown
-    final canStart = isActive && !hasCountdown;
+    // Can only start if ACTIVE
+    final canStart = isActive;
 
     return Card(
       elevation: 4,
@@ -328,8 +300,8 @@ class _StudentHomePageState extends State<StudentHomePage> {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: _ExamInfoTile(icon: Icons.repeat, label: 'المحاولات', value: '$maxAttempts'),
               ),
-            // Countdown: either to exam start (SCHEDULED) or active indicator
-            if (hasCountdown || isScheduled) ...[
+            // Status indicator for scheduled exams
+            if (isScheduled) ...[
               const SizedBox(height: 8),
               Container(
                 width: double.infinity,
@@ -344,7 +316,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
                     Icon(Icons.schedule, color: Colors.blue.shade700, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      hasCountdown ? 'يبدأ بعد: ${_formatCountdown(_countdown)}' : 'بانتظار التفعيل من المشرف',
+                      'بانتظار التفعيل من المشرف',
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.blue.shade700),
                     ),
                   ],
@@ -358,7 +330,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
                 onPressed: canStart ? () => _startExamFlow(context) : null,
                 icon: const Icon(Icons.play_arrow),
                 label: Text(
-                  canStart ? 'بدء الامتحان' : (isScheduled ? 'الامتحان لم يبدأ بعد' : 'انتظر بداية الامتحان'),
+                  canStart ? 'بدء الامتحان' : 'الامتحان لم يبدأ بعد',
                   style: const TextStyle(fontSize: 16),
                 ),
                 style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
@@ -396,15 +368,6 @@ class _StudentHomePageState extends State<StudentHomePage> {
             : const Text('بانتظار النتيجة', style: TextStyle(fontSize: 12, color: Colors.grey)),
       ),
     );
-  }
-
-  String _formatCountdown(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60);
-    final s = d.inSeconds.remainder(60);
-    if (h > 0) return '${h}س ${m}د ${s}ث';
-    if (m > 0) return '${m}د ${s}ث';
-    return '${s}ث';
   }
 
   void _startExamFlow(BuildContext context) {

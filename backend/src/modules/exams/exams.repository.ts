@@ -69,10 +69,9 @@ export class ExamsRepository {
   }
 
   findCurrentExamForBranch(branch: string, now: Date) {
-    return prisma.exam.findFirst({
+    return prisma.exam.findMany({
       where: {
         status: { in: [ExamStatus.SCHEDULED, ExamStatus.ACTIVE] },
-        // Show scheduled exams (upcoming) and active exams (within window)
         endAt: { gte: now },
         ...(branch ? { allowedBranches: { has: branch } } : {})
       },
