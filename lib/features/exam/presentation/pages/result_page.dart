@@ -5,10 +5,6 @@ import '../../../../core/di/service_locator.dart';
 import '../../domain/entities/exam_result.dart';
 import '../cubit/exam_cubit.dart';
 import '../../../auth/domain/entities/student.dart';
-import '../../../auth/presentation/cubit/auth_cubit.dart';
-import '../../../auth/presentation/pages/login_page.dart';
-import '../../../../core/network/token_provider.dart';
-import '../../../../core/storage/local_storage_service.dart';
 import 'student_home_page.dart';
 
 class ResultPage extends StatelessWidget {
@@ -23,19 +19,85 @@ class ResultPage extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(title: const Text('النتيجة')),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _ScoreCard(result: result),
-            const SizedBox(height: 16),
-            ...result.items.map(_ResultTile.new),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => _goHome(context),
-              icon: const Icon(Icons.home),
-              label: const Text('العودة للرئيسية'),
-            ),
-          ],
+        body: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Score circle
+              Center(
+                child: Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: result.score >= 50
+                        ? Colors.green.shade50
+                        : Colors.red.shade50,
+                    border: Border.all(
+                      color: result.score >= 50 ? Colors.green : Colors.red,
+                      width: 4,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${result.score}%',
+                        style: TextStyle(
+                          fontSize: 40,
+                          fontWeight: FontWeight.bold,
+                          color: result.score >= 50 ? Colors.green : Colors.red,
+                        ),
+                      ),
+                      Text(
+                        result.score >= 50 ? 'ناجح' : 'راسب',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: result.score >= 50 ? Colors.green : Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              // Summary card
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      _SummaryRow('الإجابات الصحيحة', '${result.correctAnswers} / ${result.totalQuestions}'),
+                      const Divider(),
+                      _SummaryRow('الأسئلة المجاب عنها', '${result.totalQuestions - (result.totalQuestions - result.correctAnswers)} / ${result.totalQuestions}'),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Message
+              Card(
+                color: Colors.blue.shade50,
+                child: const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'تم تسليم الامتحان بنجاح.\nسيتم عرض النتائج التفصيلية عند قرار المشرف.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              FilledButton.icon(
+                onPressed: () => _goHome(context),
+                icon: const Icon(Icons.home),
+                label: const Text('العودة للرئيسية', style: TextStyle(fontSize: 16)),
+                style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -56,58 +118,22 @@ class ResultPage extends StatelessWidget {
   }
 }
 
-class _ScoreCard extends StatelessWidget {
-  const _ScoreCard({required this.result});
-
-  final ExamResult result;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'العلامة: ${result.score}%',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'الإجابات الصحيحة: ${result.correctAnswers} / ${result.totalQuestions}',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ResultTile extends StatelessWidget {
-  const _ResultTile(this.item);
-
-  final QuestionResult item;
+class _SummaryRow extends StatelessWidget {
+  const _SummaryRow(this.label, this.value);
+  final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: Icon(
-          item.isCorrect ? Icons.check_circle : Icons.cancel,
-          color: item.isCorrect
-              ? Colors.green
-              : Theme.of(context).colorScheme.error,
-        ),
-        title: Text('السؤال ${item.questionId}'),
-        subtitle: Text(_subtitle),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey.shade600)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        ],
       ),
     );
-  }
-
-  String get _subtitle {
-    final selected = item.selectedAnswerId ?? 'بدون إجابة';
-    final explanation = item.explanation == null ? '' : '\n${item.explanation}';
-    return 'إجابتك: $selected\nالصحيح: ${item.correctAnswerId}$explanation';
   }
 }

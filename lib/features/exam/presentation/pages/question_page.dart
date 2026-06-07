@@ -19,7 +19,13 @@ class QuestionPage extends StatelessWidget {
         listener: _listenToState,
         builder: (context, state) {
           final ready = _readyFrom(state);
-          if (ready == null) return const Scaffold(body: SizedBox.shrink());
+          if (ready == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          if (ready.questions.isEmpty) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('الامتحان')),
+              body: const Center(child: Text('لا توجد أسئلة في هذا الامتحان', style: TextStyle(fontSize: 18))),
+            );
+          }
           return _QuestionScaffold(ready: ready);
         },
       ),

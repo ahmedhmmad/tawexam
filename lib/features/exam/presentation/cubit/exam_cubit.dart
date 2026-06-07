@@ -49,6 +49,10 @@ class ExamCubit extends Cubit<ExamState> {
 
   Future<void> loadForStudent({required Student student}) async {
     emit(const ExamLoading());
+    // Cancel any running timer subscription from a previous session
+    await _timerSubscription?.cancel();
+    _timerSubscription = null;
+    await _countdownService.pause();
     final examResult = await _loadExamUseCase();
     await examResult.fold(
       (failure) async => emit(ExamError(failure.message)),
