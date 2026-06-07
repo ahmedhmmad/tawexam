@@ -5,8 +5,15 @@ import '../cubit/exam_cubit.dart';
 import '../cubit/exam_state.dart';
 import 'result_page.dart';
 
-class SubmitConfirmationPage extends StatelessWidget {
+class SubmitConfirmationPage extends StatefulWidget {
   const SubmitConfirmationPage({super.key});
+
+  @override
+  State<SubmitConfirmationPage> createState() => _SubmitConfirmationPageState();
+}
+
+class _SubmitConfirmationPageState extends State<SubmitConfirmationPage> {
+  ExamReady? _lastReady;
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +23,7 @@ class SubmitConfirmationPage extends StatelessWidget {
         listener: _listenToState,
         builder: (context, state) {
           final ready = _readyFrom(state);
+          if (ready != null) _lastReady = ready;
           return Scaffold(
             appBar: AppBar(title: const Text('تأكيد التسليم')),
             body: ready == null
@@ -29,20 +37,20 @@ class SubmitConfirmationPage extends StatelessWidget {
 
   void _listenToState(BuildContext context, ExamState state) {
     if (state is ExamSubmitted) {
+      final ready = _lastReady;
+      if (ready == null) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => BlocProvider.value(
             value: context.read<ExamCubit>(),
-            child: ResultPage(result: state.result),
+            child: ResultPage(result: state.result, student: ready.student),
           ),
         ),
         (_) => false,
       );
     }
     if (state is ExamError) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(state.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
     }
   }
 
@@ -74,9 +82,7 @@ class _ConfirmationBody extends StatelessWidget {
             _Warning(unanswered: ready.unansweredCount),
           const Spacer(),
           FilledButton(
-            onPressed: isSubmitting
-                ? null
-                : context.read<ExamCubit>().submitExam,
+            onPressed: isSubmitting ? null : context.read<ExamCubit>().submitExam,
             child: isSubmitting
                 ? const CircularProgressIndicator()
                 : const Text('تأكيد التسليم'),
@@ -104,10 +110,7 @@ class _FinalSummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'الملخص النهائي',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('الملخص النهائي', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
             Text('عدد الأسئلة: ${ready.questions.length}'),
             Text('تمت الإجابة: ${ready.answeredCount}'),

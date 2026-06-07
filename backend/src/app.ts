@@ -1,4 +1,6 @@
 import http from "node:http";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import compression from "compression";
 import cors from "cors";
@@ -68,6 +70,13 @@ app.use(`${env.API_PREFIX}/admin`, questionsRouter);
 app.use(`${env.API_PREFIX}/admin/exams`, adminResultsRouter);
 app.use(`${env.API_PREFIX}/admin`, adminSessionsRouter);
 app.use(`${env.API_PREFIX}/admin/monitoring`, monitoringRouter);
+
+// Legal pages (Privacy Policy, Terms of Service, Data Deletion)
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use("/legal", express.static(path.join(__dirname, "../legal"), {
+  extensions: ["html"],
+  index: "index.html"
+}));
 
 app.use((_req, _res, next) => {
   next(new AppError("Route not found", 404, "ROUTE_NOT_FOUND"));
