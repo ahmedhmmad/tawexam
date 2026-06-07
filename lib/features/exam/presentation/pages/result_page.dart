@@ -23,7 +23,11 @@ class ResultPage extends StatelessWidget {
             ...result.items.map(_ResultTile.new),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              onPressed: () {
+                // Pop back: ResultPage → QuestionPage → InstructionsPage → Home
+                var count = 0;
+                Navigator.of(context).popUntil((_) => count++ >= 3);
+              },
               icon: const Icon(Icons.home),
               label: const Text('العودة للرئيسية'),
             ),
