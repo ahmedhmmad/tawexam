@@ -11,7 +11,13 @@ export class SessionsRepository {
   }
 
   countAttempts(studentId: string, examId: string) {
-    return prisma.examSession.count({ where: { studentId, examId } });
+    return prisma.examSession.count({
+      where: {
+        studentId,
+        examId,
+        status: { in: ['SUBMITTED', 'EXPIRED', 'FORCE_ENDED'] }
+      }
+    });
   }
 
   create(data: {
