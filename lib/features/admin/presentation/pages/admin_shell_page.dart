@@ -4,10 +4,27 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../cubit/admin_auth_cubit.dart';
+import '../cubit/admin_auth_state.dart';
 import '../cubit/exam_manager_cubit.dart';
 import '../cubit/student_manager_cubit.dart';
+import 'admin_login_page.dart';
+import 'admin_results_overview_page.dart';
 import 'exams_list_page.dart';
 import 'students_page.dart';
+
+class _AdminAuthGate extends StatelessWidget {
+  const _AdminAuthGate();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AdminAuthCubit, AdminAuthState>(
+      builder: (ctx, state) {
+        if (state is AdminAuthSuccess) return const AdminShellPage();
+        return const AdminLoginPage();
+      },
+    );
+  }
+}
 
 class AdminShellPage extends StatefulWidget {
   const AdminShellPage({super.key});
@@ -43,7 +60,21 @@ class _AdminShellPageState extends State<AdminShellPage> {
                   child: IconButton(
                     icon: const Icon(Icons.logout),
                     tooltip: 'تسجيل الخروج',
-                    onPressed: () => context.read<AdminAuthCubit>().logout(),
+                    onPressed: () async {
+                      final navigator = Navigator.of(context);
+                      await context.read<AdminAuthCubit>().logout();
+                      if (!context.mounted) return;
+                      // Force rebuild to ensure login page shows
+                      navigator.pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => BlocProvider.value(
+                            value: context.read<AdminAuthCubit>(),
+                            child: const _AdminAuthGate(),
+                          ),
+                        ),
+                        (_) => false,
+                      );
+                    },
                   ),
                 ),
               ),
@@ -69,7 +100,10 @@ class _AdminShellPageState extends State<AdminShellPage> {
           child: const StudentsContent(),
         );
       default:
-        return const Center(child: Text('النتائج — قريباً'));
+        return BlocProvider(
+          create: (_) => getIt<ExamManagerCubit>()..load(),
+          child: const AdminResultsOverviewPage(),
+        );
     }
   }
 }

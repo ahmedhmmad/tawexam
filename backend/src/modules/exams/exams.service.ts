@@ -5,14 +5,6 @@ import { ResultsService } from "../results/results.service.js";
 import { SessionsService } from "../sessions/sessions.service.js";
 import { ExamsRepository } from "./exams.repository.js";
 
-const VALID_TRANSITIONS: Record<ExamStatus, ExamStatus[]> = {
-  [ExamStatus.DRAFT]: [ExamStatus.SCHEDULED],
-  [ExamStatus.SCHEDULED]: [ExamStatus.ACTIVE],
-  [ExamStatus.ACTIVE]: [ExamStatus.COMPLETED],
-  [ExamStatus.COMPLETED]: [ExamStatus.ARCHIVED],
-  [ExamStatus.ARCHIVED]: []
-};
-
 export class ExamsService {
   constructor(
     private readonly repository: ExamsRepository = new ExamsRepository(),
@@ -197,16 +189,7 @@ export class ExamsService {
     if (!exam) {
       throw new AppError("Exam not found", 404, "EXAM_NOT_FOUND");
     }
-
-    const allowedTransitions = VALID_TRANSITIONS[exam.status as ExamStatus] ?? [];
-    if (!allowedTransitions.includes(status)) {
-      throw new AppError(
-        `Invalid status transition from ${exam.status} to ${status}. Allowed: ${allowedTransitions.join(", ") || "none"}`,
-        400,
-        "INVALID_STATUS_TRANSITION"
-      );
-    }
-
+    // Allow any status transition (admins can move freely)
     return this.repository.update(id, { status });
   }
 

@@ -45,6 +45,17 @@ class _ResultsPageState extends State<ResultsPage> {
     }
   }
 
+  String _shortError(String err) {
+    final m = RegExp(r'\b(4\d{2}|5\d{2})\b').firstMatch(err);
+    if (m != null) return 'خطأ ${m.group(1)}';
+    if (err.toLowerCase().contains('connection') ||
+        err.toLowerCase().contains('network') ||
+        err.toLowerCase().contains('timeout')) {
+      return 'خطأ في الاتصال';
+    }
+    return 'خطأ مؤقت';
+  }
+
   Future<void> _exportExcel() async {
     try {
       final response = await _dio.get<List<int>>(
@@ -141,16 +152,30 @@ class _ResultsPageState extends State<ResultsPage> {
     }
     if (_error != null) {
       return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('خطأ: $_error'),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _loadResults,
-              child: const Text('إعادة المحاولة'),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              const Text('حدث خطأ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(_shortError(_error!), style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                icon: const Icon(Icons.refresh),
+                onPressed: _loadResults,
+                label: const Text('إعادة المحاولة'),
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+                label: const Text('العودة'),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -168,6 +193,7 @@ class _ResultsPageState extends State<ResultsPage> {
             DataColumn(label: Text('الاسم', style: TextStyle(fontWeight: FontWeight.bold))),
             DataColumn(label: Text('رقم الجلوس', style: TextStyle(fontWeight: FontWeight.bold))),
             DataColumn(label: Text('الفرع', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('المحاولة', style: TextStyle(fontWeight: FontWeight.bold))),
             DataColumn(label: Text('الحالة', style: TextStyle(fontWeight: FontWeight.bold))),
             DataColumn(label: Text('العلامة', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
             DataColumn(label: Text('الصحيح/الكلي', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -196,6 +222,7 @@ class _ResultsPageState extends State<ResultsPage> {
               DataCell(Text(r['studentName'] as String? ?? '')),
               DataCell(Text(r['seatNumber'] as String? ?? '')),
               DataCell(Text(r['branch'] as String? ?? '')),
+              DataCell(Text('${r['attemptNumber'] ?? 1}')),
               DataCell(Text(statusAr)),
               DataCell(Text(score != null ? '$score%' : '-')),
               DataCell(Text('${r['correctCount'] ?? 0} / ${r['totalQuestions'] ?? 0}')),

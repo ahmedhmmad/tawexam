@@ -11,6 +11,20 @@ import 'question_upload_page.dart';
 import 'questions_page.dart';
 import 'results_page.dart';
 
+String _extractErrorCode(String message) {
+  // Extract a short code: HTTP status, error name, or fallback
+  final statusMatch = RegExp(r'\b(4\d{2}|5\d{2})\b').firstMatch(message);
+  if (statusMatch != null) return 'خطأ ${statusMatch.group(1)}';
+  if (message.toLowerCase().contains('connection') ||
+      message.toLowerCase().contains('network') ||
+      message.toLowerCase().contains('timeout')) {
+    return 'خطأ في الاتصال';
+  }
+  if (message.toLowerCase().contains('unauthorized')) return 'غير مصرح';
+  if (message.toLowerCase().contains('forbidden')) return 'ممنوع الوصول';
+  return 'خطأ مؤقت';
+}
+
 
 class ExamsListContent extends StatefulWidget {
   const ExamsListContent({super.key});
@@ -59,7 +73,7 @@ class _ExamsListContentState extends State<ExamsListContent> {
       body: BlocConsumer<ExamManagerCubit, ExamManagerState>(
         listener: (ctx, state) {
           if (state is ExamManagerError) {
-            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(_extractErrorCode(state.message))));
           }
         },
         builder: (ctx, state) => switch (state) {
@@ -76,13 +90,24 @@ class _ExamsListContentState extends State<ExamsListContent> {
                 : _ExamsList(exams: filtered, onEdit: (exam) => _showExamDialog(context, exam: exam));
           }(),
           ExamManagerError(:final message) => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('خطأ: $message'),
-                  const SizedBox(height: 16),
-                  FilledButton(onPressed: () => ctx.read<ExamManagerCubit>().load(), child: const Text('إعادة المحاولة')),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
+                    const SizedBox(height: 16),
+                    const Text('حدث خطأ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text(_extractErrorCode(message), style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: () => ctx.read<ExamManagerCubit>().load(),
+                      label: const Text('إعادة المحاولة'),
+                    ),
+                  ],
+                ),
               ),
             ),
           _ => const Center(child: CircularProgressIndicator()),
