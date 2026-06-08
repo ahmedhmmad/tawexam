@@ -71,12 +71,14 @@ export class ResultsService {
     // Also get all sessions (including ungraded/in-progress)
     const sessions = await this.repository.listSessionsWithStudents(examId);
 
-    // Merge: prefer graded results, fall back to session data
-    const gradedMap = new Map(graded.map(r => [r.session.studentId, r]));
+    // Map by sessionId (each attempt has its own result)
+    const gradedMap = new Map(graded.map(r => [r.sessionId, r]));
 
     return sessions.map(s => {
-      const result = gradedMap.get(s.studentId);
+      const result = gradedMap.get(s.id);
       return {
+        sessionId: s.id,
+        attemptNumber: s.attemptNumber,
         studentName: s.student.fullName,
         seatNumber: s.student.seatNumber,
         branch: s.student.branch,
@@ -86,7 +88,8 @@ export class ResultsService {
         answeredCount: result?.answeredCount ?? s.answers.length,
         timeTakenSeconds: result?.timeTakenSeconds ?? 0,
         status: s.status,
-        gradedAt: result?.gradedAt ?? null
+        gradedAt: result?.gradedAt ?? null,
+        startedAt: s.startedAt
       };
     });
   }
