@@ -1,7 +1,7 @@
 name: taw_exam
 description: "Offline-first Tawjihi exam training platform."
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.1.2+6
 
 environment:
   sdk: ^3.10.8

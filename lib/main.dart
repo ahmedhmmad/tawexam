@@ -19,11 +19,65 @@ void callbackDispatcher() {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Show splash immediately while initializing
+  runApp(const _LoadingApp());
   await configureDependencies();
-
   // Check for saved session
   final savedStudent = await _loadCachedStudent();
   runApp(TawExamApp(savedStudent: savedStudent));
+}
+
+class _LoadingApp extends StatelessWidget {
+  const _LoadingApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1E88E5), Color(0xFF1565C0)],
+            ),
+          ),
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.school, size: 96, color: Colors.white),
+                SizedBox(height: 24),
+                Text(
+                  'توجيهي',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'منصة الامتحانات',
+                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                ),
+                SizedBox(height: 48),
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Try to load cached student from local storage (session persistence)

@@ -66,12 +66,12 @@ class _StudentHomePageState extends State<StudentHomePage> {
         _currentExam = null;
         _allExams = [];
         if (e.response?.statusCode != 404) {
-          _error = '${e.response?.statusCode}: ${e.message}';
+          _error = _shortError(e.response?.statusCode);
         }
-      } catch (e) {
+      } catch (_) {
         _currentExam = null;
         _allExams = [];
-        _error = '$e';
+        _error = 'خطأ مؤقت';
       }
 
       // Load past exams - optional
@@ -84,9 +84,14 @@ class _StudentHomePageState extends State<StudentHomePage> {
       }
 
       setState(() => _loading = false);
-    } catch (e) {
-      setState(() { _error = 'load: $e'; _loading = false; });
+    } catch (_) {
+      setState(() { _error = 'خطأ مؤقت'; _loading = false; });
     }
+  }
+
+  String _shortError(int? code) {
+    if (code == null) return 'خطأ في الاتصال';
+    return 'خطأ $code';
   }
 
   @override
@@ -166,7 +171,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
         Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.wifi_off, size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 16),
-          Text(_error!, style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+          Text(_error!, style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
           const SizedBox(height: 16),
           OutlinedButton.icon(icon: const Icon(Icons.refresh), label: const Text('إعادة المحاولة'), onPressed: _loadExams),
         ])),

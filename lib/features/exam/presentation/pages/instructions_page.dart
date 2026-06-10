@@ -34,6 +34,20 @@ class _NoExamView extends StatelessWidget {
   final VoidCallback? onRetry;
   final String? error;
 
+  String _shortenError(String err) {
+    // Extract only short error code (e.g., "400", "404", "Connection failed")
+    if (err.contains('400')) return 'خطأ 400';
+    if (err.contains('401')) return 'خطأ 401';
+    if (err.contains('404')) return 'خطأ 404';
+    if (err.contains('500')) return 'خطأ 500';
+    if (err.toLowerCase().contains('connection') || err.toLowerCase().contains('network')) {
+      return 'خطأ في الاتصال';
+    }
+    if (err.toLowerCase().contains('host lookup')) return 'خطأ في الاتصال';
+    if (err.toLowerCase().contains('timeout')) return 'انتهت المهلة';
+    return 'خطأ مؤقت';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -51,7 +65,11 @@ class _NoExamView extends StatelessWidget {
             ),
             if (error != null) ...[
               const SizedBox(height: 12),
-              Text(error!, style: TextStyle(color: Colors.red.shade700, fontSize: 13), textAlign: TextAlign.center),
+              Text(
+                _shortenError(error!),
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
+                textAlign: TextAlign.center,
+              ),
             ],
             const SizedBox(height: 12),
             Text(
