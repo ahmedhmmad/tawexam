@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/exam_cubit.dart';
 import '../cubit/exam_state.dart';
 import '../widgets/exam_header.dart';
+import '../widgets/exam_image.dart';
 import '../widgets/question_palette.dart';
 import '../widgets/radio_group.dart';
 import 'review_page.dart';
@@ -92,6 +93,10 @@ class _QuestionBody extends StatelessWidget {
       children: [
         _QuestionMeta(ready: ready),
         const SizedBox(height: 16),
+        if (question.imageUrl != null) ...[
+          ExamImage(imageUrl: question.imageUrl),
+          const SizedBox(height: 16),
+        ],
         Directionality(
           textDirection: _directionFor(question.text),
           child: Text(
@@ -110,6 +115,7 @@ class _QuestionBody extends StatelessWidget {
                     isLocked: ready.isLocked,
                     optionId: option.id,
                     text: option.text,
+                    imageUrl: option.imageUrl,
                   ),
                 )
                 .toList(growable: false),
@@ -167,11 +173,13 @@ class _ChoiceTile extends StatelessWidget {
     required this.isLocked,
     required this.optionId,
     required this.text,
+    this.imageUrl,
   });
 
   final bool isLocked;
   final String optionId;
   final String text;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -183,7 +191,18 @@ class _ChoiceTile extends StatelessWidget {
       enabled: !isLocked,
       title: Directionality(
         textDirection: _directionFor(text),
-        child: Text(text),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (imageUrl != null) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8, top: 4),
+                child: ExamImage(imageUrl: imageUrl, maxHeight: 140),
+              ),
+            ],
+            Text(text),
+          ],
+        ),
       ),
     );
   }

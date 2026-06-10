@@ -8,6 +8,7 @@ class Question extends Equatable {
     required this.text,
     required this.options,
     required this.order,
+    this.imageUrl,
     this.explanation,
     this.correctAnswerId,
   });
@@ -16,11 +17,12 @@ class Question extends Equatable {
   final String text;
   final List<AnswerOption> options;
   final int order;
+  final String? imageUrl;
   final String? explanation;
   final String? correctAnswerId;
 
   @override
   List<Object?> get props {
-    return [id, text, options, order, explanation, correctAnswerId];
+    return [id, text, options, order, imageUrl, explanation, correctAnswerId];
   }
 }

@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  cached_network_image: ^3.4.1
   connectivity_plus: ^5.0.2
   dartz: ^0.10.1
   dio: ^5.9.0

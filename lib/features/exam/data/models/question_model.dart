@@ -8,6 +8,7 @@ class QuestionModel extends Question {
     required super.text,
     required super.options,
     required super.order,
+    super.imageUrl,
     super.explanation,
     super.correctAnswerId,
   });
@@ -18,6 +19,7 @@ class QuestionModel extends Question {
       text: '${json['text'] ?? json['question_text']}',
       options: _readOptions(json),
       order: _readOrder(json),
+      imageUrl: _readOptional(json['imageUrl'] ?? json['image_url']),
       explanation: _readOptional(json['explanation']),
       correctAnswerId: _readOptional(
         json['correctAnswer'] ?? json['correct_answer'],
@@ -31,6 +33,7 @@ class QuestionModel extends Question {
       'text': text,
       'options': options.map(_optionToJson).toList(growable: false),
       'order': order,
+      'imageUrl': imageUrl,
       'explanation': explanation,
       'correctAnswer': correctAnswerId,
     };
@@ -72,6 +75,6 @@ class QuestionModel extends Question {
   }
 
   static Map<String, dynamic> _optionToJson(AnswerOption option) {
-    return {'id': option.id, 'text': option.text};
+    return {'id': option.id, 'text': option.text, 'imageUrl': option.imageUrl};
   }
 }

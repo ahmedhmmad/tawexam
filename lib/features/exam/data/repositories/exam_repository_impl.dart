@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 
 import '../../../../core/errors/failure_mapper.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/network/image_prefetcher.dart';
 import '../../../../core/sync/sync_service.dart';
 import '../../../../core/sync/sync_task.dart';
 import '../../../auth/domain/entities/exam_session.dart';
@@ -18,13 +21,16 @@ class ExamRepositoryImpl implements ExamRepository {
     required ExamRemoteDataSource remoteDataSource,
     required ExamLocalDataSource localDataSource,
     required SyncService syncService,
+    ImagePrefetcher imagePrefetcher = const ImagePrefetcher(),
   }) : _remoteDataSource = remoteDataSource,
        _localDataSource = localDataSource,
-       _syncService = syncService;
+       _syncService = syncService,
+       _imagePrefetcher = imagePrefetcher;
 
   final ExamRemoteDataSource _remoteDataSource;
   final ExamLocalDataSource _localDataSource;
   final SyncService _syncService;
+  final ImagePrefetcher _imagePrefetcher;
 
   @override
   Future<Either<Failure, Exam>> getCurrentExam() async {
@@ -52,6 +58,8 @@ class ExamRepositoryImpl implements ExamRepository {
     try {
       final questions = await _remoteDataSource.getQuestions(examId);
       await _localDataSource.cacheQuestions(examId, questions);
+      // Fire-and-forget so the exam can start before all images are cached.
+      unawaited(_prefetchQuestionImages(questions));
       return Right(questions);
     } catch (error) {
       return _cachedQuestionsOrFailure(examId, error);
@@ -135,6 +143,15 @@ class ExamRepositoryImpl implements ExamRepository {
     } catch (error) {
       return Left(mapExceptionToFailure(error));
     }
+  }
+
+  Future<void> _prefetchQuestionImages(List<Question> questions) {
+    return _imagePrefetcher.prefetch([
+      for (final question in questions) ...[
+        question.imageUrl,
+        ...question.options.map((option) => option.imageUrl),
+      ],
+    ]);
   }
 
   SyncTask _answerTask(

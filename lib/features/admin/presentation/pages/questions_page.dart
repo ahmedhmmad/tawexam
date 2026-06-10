@@ -1,7 +1,9 @@
 // lib/features/admin/presentation/pages/questions_page.dart
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 
+import '../../../../core/constants/api_config.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/network/api_client.dart';
 
@@ -165,6 +167,7 @@ class _QuestionCard extends StatelessWidget {
                   child: Text('${index + 1}', style: const TextStyle(fontSize: 12)),
                 ),
                 const SizedBox(width: 8),
+                _Thumbnail(imageUrl: question['imageUrl'] as String?),
                 Expanded(
                   child: Text(
                     question['text'] as String? ?? '',
@@ -181,7 +184,9 @@ class _QuestionCard extends StatelessWidget {
               runSpacing: 4,
               children: choices.map<Widget>((c) {
                 final isCorrect = c['isCorrect'] == true;
+                final hasImage = (c['imageUrl'] as String?)?.isNotEmpty == true;
                 return Chip(
+                  avatar: hasImage ? const Icon(Icons.image, size: 16) : null,
                   label: Text('${c['label']}: ${c['text']}'),
                   backgroundColor: isCorrect ? Colors.green.shade100 : null,
                   side: isCorrect ? const BorderSide(color: Colors.green) : null,
@@ -196,6 +201,132 @@ class _QuestionCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _Thumbnail extends StatelessWidget {
+  const _Thumbnail({required this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved = ApiConfig.resolveMediaUrl(imageUrl);
+    if (resolved == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.network(
+          resolved,
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.broken_image_outlined, size: 24, color: Colors.grey),
+        ),
+      ),
+    );
+  }
+}
+
+/// Upload-backed image field: picks a local image, uploads it to the backend
+/// and reports the stored URL. Shows a preview with a remove button when set.
+class _ImagePickerField extends StatefulWidget {
+  const _ImagePickerField({
+    required this.dio,
+    required this.label,
+    required this.imageUrl,
+    required this.onChanged,
+    this.previewHeight = 96,
+  });
+
+  final Dio dio;
+  final String label;
+  final String? imageUrl;
+  final ValueChanged<String?> onChanged;
+  final double previewHeight;
+
+  @override
+  State<_ImagePickerField> createState() => _ImagePickerFieldState();
+}
+
+class _ImagePickerFieldState extends State<_ImagePickerField> {
+  bool _uploading = false;
+
+  static const _maxBytes = 2 * 1024 * 1024;
+
+  Future<void> _pickAndUpload() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['png', 'jpg', 'jpeg', 'webp'],
+      withData: true,
+    );
+    final file = result?.files.firstOrNull;
+    final bytes = file?.bytes;
+    if (file == null || bytes == null) return;
+    if (bytes.length > _maxBytes) {
+      _showError('Image exceeds the 2MB size limit');
+      return;
+    }
+
+    setState(() => _uploading = true);
+    try {
+      final form = FormData.fromMap({
+        'file': MultipartFile.fromBytes(bytes, filename: file.name),
+      });
+      final response = await widget.dio.post<Map<String, dynamic>>(
+        '/admin/uploads/question-image',
+        data: form,
+      );
+      final url = (response.data?['data'] as Map?)?['url'] as String?;
+      if (url != null) widget.onChanged(url);
+    } catch (e) {
+      _showError('Upload failed: $e');
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved = ApiConfig.resolveMediaUrl(widget.imageUrl);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (resolved != null) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Image.network(
+              resolved,
+              height: widget.previewHeight,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => SizedBox(
+                height: widget.previewHeight,
+                child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18, color: Colors.red),
+            tooltip: 'Remove image',
+            onPressed: () => widget.onChanged(null),
+          ),
+        ],
+        TextButton.icon(
+          onPressed: _uploading ? null : _pickAndUpload,
+          icon: _uploading
+              ? const SizedBox.square(dimension: 14, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.image_outlined, size: 18),
+          label: Text(resolved == null ? widget.label : 'Replace'),
+        ),
+      ],
     );
   }
 }
@@ -223,6 +354,8 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
   late final TextEditingController _category;
   late String _correctAnswer;
   late String _difficulty;
+  String? _questionImageUrl;
+  late final Map<String, String?> _choiceImageUrls;
   bool _submitting = false;
 
   bool get _isEditing => widget.question != null;
@@ -240,6 +373,11 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
       final match = choices.where((c) => c['isCorrect'] == true).toList();
       return match.isNotEmpty ? match.first['label'] as String : 'A';
     }
+    String? choiceImage(String label) {
+      final match = choices.where((c) => c['label'] == label).toList();
+      final url = match.isNotEmpty ? match.first['imageUrl'] as String? : null;
+      return (url?.isEmpty ?? true) ? null : url;
+    }
 
     _text = TextEditingController(text: q?['text'] as String? ?? '');
     _choiceA = TextEditingController(text: choiceText('A'));
@@ -249,6 +387,9 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
     _explanation = TextEditingController(text: q?['explanation'] as String? ?? '');
     _category = TextEditingController(text: q?['category'] as String? ?? '');
     _correctAnswer = correctLabel();
+    final questionImage = q?['imageUrl'] as String?;
+    _questionImageUrl = (questionImage?.isEmpty ?? true) ? null : questionImage;
+    _choiceImageUrls = {for (final label in ['A', 'B', 'C', 'D']) label: choiceImage(label)};
     _difficulty = (q?['difficulty'] as String? ?? 'EASY').toUpperCase();
     if (!['EASY', 'MEDIUM', 'HARD'].contains(_difficulty)) _difficulty = 'EASY';
   }
@@ -283,30 +424,21 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
                   maxLines: 3,
                   validator: (v) => (v ?? '').isEmpty ? 'Required' : null,
                 ),
+                const SizedBox(height: 4),
+                _ImagePickerField(
+                  dio: widget.dio,
+                  label: 'Add question image',
+                  imageUrl: _questionImageUrl,
+                  onChanged: (url) => setState(() => _questionImageUrl = url),
+                ),
                 const SizedBox(height: 12),
-                TextFormField(
-                  controller: _choiceA,
-                  decoration: const InputDecoration(labelText: 'Choice A'),
-                  validator: (v) => (v ?? '').isEmpty ? 'Required' : null,
-                ),
+                _choiceField('A', _choiceA),
                 const SizedBox(height: 8),
-                TextFormField(
-                  controller: _choiceB,
-                  decoration: const InputDecoration(labelText: 'Choice B'),
-                  validator: (v) => (v ?? '').isEmpty ? 'Required' : null,
-                ),
+                _choiceField('B', _choiceB),
                 const SizedBox(height: 8),
-                TextFormField(
-                  controller: _choiceC,
-                  decoration: const InputDecoration(labelText: 'Choice C'),
-                  validator: (v) => (v ?? '').isEmpty ? 'Required' : null,
-                ),
+                _choiceField('C', _choiceC),
                 const SizedBox(height: 8),
-                TextFormField(
-                  controller: _choiceD,
-                  decoration: const InputDecoration(labelText: 'Choice D'),
-                  validator: (v) => (v ?? '').isEmpty ? 'Required' : null,
-                ),
+                _choiceField('D', _choiceD),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: _correctAnswer,
@@ -357,21 +489,51 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
     );
   }
 
+  Widget _choiceField(String label, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: controller,
+          decoration: InputDecoration(labelText: 'Choice $label'),
+          validator: (v) => (v ?? '').isEmpty ? 'Required' : null,
+        ),
+        _ImagePickerField(
+          dio: widget.dio,
+          label: 'Add image',
+          imageUrl: _choiceImageUrls[label],
+          previewHeight: 56,
+          onChanged: (url) => setState(() => _choiceImageUrls[label] = url),
+        ),
+      ],
+    );
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _submitting = true);
 
+    Map<String, dynamic> choice(String label, TextEditingController controller) {
+      return {
+        'label': label,
+        'text': controller.text,
+        'imageUrl': _choiceImageUrls[label],
+        'isCorrect': _correctAnswer == label,
+      };
+    }
+
     final body = {
       'text': _text.text,
+      'imageUrl': _questionImageUrl,
       'difficulty': _difficulty,
       'category': _category.text,
       'orderIndex': (widget.question?['orderIndex'] as int?) ?? widget.nextOrderIndex,
       if (_explanation.text.isNotEmpty) 'explanation': _explanation.text,
       'choices': [
-        {'label': 'A', 'text': _choiceA.text, 'isCorrect': _correctAnswer == 'A'},
-        {'label': 'B', 'text': _choiceB.text, 'isCorrect': _correctAnswer == 'B'},
-        {'label': 'C', 'text': _choiceC.text, 'isCorrect': _correctAnswer == 'C'},
-        {'label': 'D', 'text': _choiceD.text, 'isCorrect': _correctAnswer == 'D'},
+        choice('A', _choiceA),
+        choice('B', _choiceB),
+        choice('C', _choiceC),
+        choice('D', _choiceD),
       ],
     };
 

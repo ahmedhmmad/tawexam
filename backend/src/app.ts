@@ -22,6 +22,7 @@ import { questionsRouter } from "./modules/questions/questions.router.js";
 import { adminResultsRouter, studentResultsRouter } from "./modules/results/results.router.js";
 import { adminSessionsRouter, studentSessionsRouter } from "./modules/sessions/sessions.router.js";
 import { studentsRouter } from "./modules/students/students.router.js";
+import { uploadsRouter } from "./modules/uploads/uploads.router.js";
 import { AppError } from "./utils/app-error.js";
 import { sendSuccess } from "./utils/api-response.js";
 
@@ -49,6 +50,19 @@ app.use(cors({ origin: env.CORS_ORIGIN === "*" ? true : env.CORS_ORIGIN, credent
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(morgan("combined", { stream: { write: (message) => logger.info(message.trim()) } }));
+
+// Static question/choice images. Mounted before the rate limiter so a page of
+// image-heavy questions doesn't exhaust the per-IP API budget. Filenames are
+// immutable UUIDs, so long cache lifetimes are safe.
+app.use(
+  "/uploads",
+  (_req, res, next) => {
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    next();
+  },
+  express.static(env.UPLOAD_DIR, { maxAge: "30d", immutable: true })
+);
+
 app.use(globalRateLimiter);
 
 app.get("/health", (_req, res) => {
@@ -68,6 +82,7 @@ app.use(`${env.API_PREFIX}/admin`, questionsRouter);
 app.use(`${env.API_PREFIX}/admin/exams`, adminResultsRouter);
 app.use(`${env.API_PREFIX}/admin`, adminSessionsRouter);
 app.use(`${env.API_PREFIX}/admin/monitoring`, monitoringRouter);
+app.use(`${env.API_PREFIX}/admin/uploads`, uploadsRouter);
 
 app.use((_req, _res, next) => {
   next(new AppError("Route not found", 404, "ROUTE_NOT_FOUND"));

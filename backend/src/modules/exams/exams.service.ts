@@ -168,6 +168,7 @@ export class ExamsService {
     return exam.questions.map((question) => ({
       id: question.id,
       text: question.text,
+      imageUrl: question.imageUrl,
       difficulty: question.difficulty,
       category: question.category,
       orderIndex: question.orderIndex,
@@ -175,7 +176,8 @@ export class ExamsService {
       choices: question.choices.map((choice) => ({
         id: choice.id,
         label: choice.label,
-        text: choice.text
+        text: choice.text,
+        imageUrl: choice.imageUrl
       }))
     }));
   }
