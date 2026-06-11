@@ -82,7 +82,9 @@ class AuthInterceptor extends Interceptor {
       await _tokenProvider.clearTokens();
       handler.next(DioException(
         requestOptions: options,
-        error: const SessionExpiredFailure('Session expired'),
+        error: const SessionExpiredFailure(
+          'انتهت الجلسة، يرجى تسجيل الدخول مجدداً',
+        ),
         type: DioExceptionType.badResponse,
       ));
     }

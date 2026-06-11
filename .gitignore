@@ -62,3 +62,5 @@ android/key.properties
 keystore/
 *.jks
 *.keystore
+sample_questions_math.xlsx
+~$sample_questions_math.xlsx
