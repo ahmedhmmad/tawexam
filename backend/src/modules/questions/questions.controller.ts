@@ -48,7 +48,7 @@ export class QuestionsController {
   }
 
   async validateImport(req: Request, res: Response): Promise<Response> {
-    const result = questionsService.validateWorkbook(req.file as Express.Multer.File);
+    const result = await questionsService.validateWorkbook(req.file as Express.Multer.File);
     return sendSuccess(res, result, "Workbook validated");
   }
 

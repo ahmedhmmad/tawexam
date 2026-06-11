@@ -48,10 +48,13 @@ export const importModeSchema = z.object({
   mode: z.enum(["append", "replace"]).default("append")
 });
 
+// question_text / choice_a / choice_b may be empty when the cell holds an
+// in-cell image instead of text — text-or-image presence is enforced after
+// image extraction in QuestionsService.
 export const questionImportRowSchema = z.object({
-  question_text: z.string().min(1),
-  choice_a: z.string().min(1),
-  choice_b: z.string().min(1),
+  question_text: z.coerce.string().optional().default(""),
+  choice_a: z.coerce.string().optional().default(""),
+  choice_b: z.coerce.string().optional().default(""),
   choice_c: z.string().optional(),
   choice_d: z.string().optional(),
   correct_answer: z.enum(["A", "B", "C", "D"]),
