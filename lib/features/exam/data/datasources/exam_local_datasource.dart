@@ -25,6 +25,12 @@ abstract interface class ExamLocalDataSource {
     required String examId,
     required String sessionId,
   });
+
+  /// Marks a session as submitted on this device, so the exam can't be
+  /// re-entered while an offline submission is still waiting to sync.
+  Future<void> markSessionSubmitted(String sessionId);
+
+  Future<bool> isSessionSubmitted(String sessionId);
 }
 
 class ExamLocalDataSourceImpl implements ExamLocalDataSource {
@@ -115,6 +121,24 @@ class ExamLocalDataSourceImpl implements ExamLocalDataSource {
       answers: answers,
       questions: questions ?? const [],
     );
+  }
+
+  @override
+  Future<void> markSessionSubmitted(String sessionId) {
+    return _storage.write(
+      StorageKeys.examBox,
+      '${StorageKeys.examLockedPrefix}$sessionId',
+      true,
+    );
+  }
+
+  @override
+  Future<bool> isSessionSubmitted(String sessionId) async {
+    final raw = await _storage.read<bool>(
+      StorageKeys.examBox,
+      '${StorageKeys.examLockedPrefix}$sessionId',
+    );
+    return raw ?? false;
   }
 
   QuestionModel _questionFromDynamic(Object? value) {

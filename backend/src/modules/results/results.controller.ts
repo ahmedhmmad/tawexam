@@ -24,22 +24,10 @@ export class ResultsController {
       });
     }
 
+    // shapeStudentResult enforces showResults/showAnswers and attaches the
+    // per-question breakdown only when showAnswers is enabled
     const result = await resultsService.getStudentResult(examId, req.user!.id);
-
-    // If showAnswers is false, strip correct answers from response
-    if (!exam.showAnswers) {
-      return sendSuccess(res, {
-        visible: true,
-        showAnswers: false,
-        score: result.score,
-        totalQuestions: result.totalQuestions,
-        correctCount: result.correctCount,
-        answeredCount: result.answeredCount,
-        timeTakenSeconds: result.timeTakenSeconds
-      });
-    }
-
-    return sendSuccess(res, { visible: true, showAnswers: true, ...result });
+    return sendSuccess(res, await resultsService.shapeStudentResult(exam, result));
   }
 
   async analytics(req: Request, res: Response): Promise<Response> {

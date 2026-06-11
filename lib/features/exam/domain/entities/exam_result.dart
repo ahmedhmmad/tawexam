@@ -7,6 +7,8 @@ class ExamResult extends Equatable {
     required this.totalQuestions,
     required this.correctAnswers,
     required this.items,
+    this.visible = true,
+    this.message,
   });
 
   final String examId;
@@ -15,9 +17,14 @@ class ExamResult extends Equatable {
   final int correctAnswers;
   final List<QuestionResult> items;
 
+  /// False when the admin disabled result viewing (showResults) — the score
+  /// fields are meaningless and [message] should be shown instead.
+  final bool visible;
+  final String? message;
+
   @override
   List<Object?> get props {
-    return [examId, score, totalQuestions, correctAnswers, items];
+    return [examId, score, totalQuestions, correctAnswers, items, visible, message];
   }
 }
 
@@ -27,6 +34,9 @@ class QuestionResult extends Equatable {
     required this.selectedAnswerId,
     required this.correctAnswerId,
     required this.isCorrect,
+    this.questionText,
+    this.selectedAnswerText,
+    this.correctAnswerText,
     this.explanation,
   });
 
@@ -34,6 +44,9 @@ class QuestionResult extends Equatable {
   final String? selectedAnswerId;
   final String correctAnswerId;
   final bool isCorrect;
+  final String? questionText;
+  final String? selectedAnswerText;
+  final String? correctAnswerText;
   final String? explanation;
 
   @override
@@ -43,6 +56,9 @@ class QuestionResult extends Equatable {
       selectedAnswerId,
       correctAnswerId,
       isCorrect,
+      questionText,
+      selectedAnswerText,
+      correctAnswerText,
       explanation,
     ];
   }

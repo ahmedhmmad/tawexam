@@ -34,6 +34,9 @@ export class ResultsRepository {
           studentId
         }
       },
+      // Latest attempt wins — without ordering, multi-attempt students got an
+      // arbitrary attempt's result.
+      orderBy: { gradedAt: "desc" },
       include: { session: true }
     });
   }

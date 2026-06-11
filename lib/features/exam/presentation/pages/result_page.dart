@@ -19,10 +19,44 @@ class ResultPage extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(title: const Text('النتيجة')),
-        body: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        body: result.visible ? _visibleBody(context) : _hiddenBody(context),
+      ),
+    );
+  }
+
+  /// Shown when results are not visible yet (admin disabled showResults, or
+  /// the submission is still waiting for an internet connection to sync).
+  Widget _hiddenBody(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(Icons.check_circle_outline, size: 96, color: Colors.green.shade400),
+          const SizedBox(height: 24),
+          Text(
+            result.message ?? 'تم تسليم الامتحان بنجاح.\nسيتم عرض النتائج لاحقاً بقرار من المشرف.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 32),
+          FilledButton.icon(
+            onPressed: () => _goHome(context),
+            icon: const Icon(Icons.home),
+            label: const Text('العودة للرئيسية', style: TextStyle(fontSize: 16)),
+            style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _visibleBody(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Score circle
@@ -77,18 +111,22 @@ class ResultPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              // Message
-              Card(
-                color: Colors.blue.shade50,
-                child: const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'تم تسليم الامتحان بنجاح.\nسيتم عرض النتائج التفصيلية عند قرار المشرف.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14),
+              // Per-question breakdown (only present when the admin enabled
+              // showAnswers — the backend omits it otherwise)
+              if (result.items.isNotEmpty)
+                _AnswerBreakdown(items: result.items)
+              else
+                Card(
+                  color: Colors.blue.shade50,
+                  child: const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'تم تسليم الامتحان بنجاح.\nسيتم عرض الإجابات التفصيلية عند قرار المشرف.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14),
+                    ),
                   ),
                 ),
-              ),
               const SizedBox(height: 32),
               FilledButton.icon(
                 onPressed: () => _goHome(context),
@@ -97,9 +135,8 @@ class ResultPage extends StatelessWidget {
                 style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               ),
             ],
-          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -114,6 +151,77 @@ class ResultPage extends StatelessWidget {
         ),
       ),
       (_) => false,
+    );
+  }
+}
+
+class _AnswerBreakdown extends StatelessWidget {
+  const _AnswerBreakdown({required this.items});
+
+  final List<QuestionResult> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Text('تفاصيل الإجابات', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ),
+        ...items.asMap().entries.map((entry) {
+          final item = entry.value;
+          final color = item.isCorrect ? Colors.green : Colors.red;
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: color.shade200),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(item.isCorrect ? Icons.check_circle : Icons.cancel, color: color, size: 22),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${entry.key + 1}. ${item.questionText ?? ''}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    item.selectedAnswerText != null
+                        ? 'إجابتك: ${item.selectedAnswerText}'
+                        : 'لم تتم الإجابة',
+                    style: TextStyle(fontSize: 13, color: color.shade700),
+                  ),
+                  if (!item.isCorrect && item.correctAnswerText != null)
+                    Text(
+                      'الإجابة الصحيحة: ${item.correctAnswerText}',
+                      style: TextStyle(fontSize: 13, color: Colors.green.shade700),
+                    ),
+                  if (item.explanation != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        item.explanation!,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 }

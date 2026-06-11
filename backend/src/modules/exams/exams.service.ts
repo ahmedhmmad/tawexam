@@ -218,7 +218,15 @@ export class ExamsService {
         ? await this.repository.updateSessionStatus(session.id, SessionStatus.SUBMITTED, new Date())
         : expiredSession;
 
-    return this.resultsService.gradeSession(finalSession.id);
+    const result = await this.resultsService.gradeSession(finalSession.id);
+
+    // The submit response must obey the same visibility rules as the result
+    // endpoint — otherwise it leaks the score when showResults is disabled.
+    const exam = await this.repository.findById(examId);
+    if (!exam) {
+      throw new AppError("Exam not found", 404, "EXAM_NOT_FOUND");
+    }
+    return this.resultsService.shapeStudentResult(exam, result);
   }
 }
 

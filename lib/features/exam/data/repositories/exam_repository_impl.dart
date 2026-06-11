@@ -11,6 +11,7 @@ import '../../../../core/sync/sync_task.dart';
 import '../../../auth/domain/entities/exam_session.dart';
 import '../../domain/entities/exam.dart';
 import '../../domain/entities/exam_result.dart';
+import '../models/exam_result_model.dart';
 import '../../domain/entities/question.dart';
 import '../../domain/repositories/exam_repository.dart';
 import '../datasources/exam_local_datasource.dart';
@@ -47,6 +48,16 @@ class ExamRepositoryImpl implements ExamRepository {
   Future<Either<Failure, ExamSession>> getSession(String examId) async {
     try {
       final session = await _remoteDataSource.getSession(examId);
+      // The server may still report this session IN_PROGRESS if our
+      // submission is waiting in the offline sync queue — block re-entry.
+      if (await _localDataSource.isSessionSubmitted(session.id)) {
+        return const Left(
+          ValidationFailure(
+            'تم تسليم هذا الامتحان مسبقاً، بانتظار مزامنة النتيجة',
+            code: 'ALREADY_SUBMITTED',
+          ),
+        );
+      }
       return Right(session);
     } catch (error) {
       return Left(mapExceptionToFailure(error));
@@ -136,8 +147,12 @@ class ExamRepositoryImpl implements ExamRepository {
         answers: answers,
         submittedAt: submittedAt,
       );
+      await _localDataSource.markSessionSubmitted(sessionId);
       return Right(result);
     } on DioException catch (error) {
+      // Offline: lock the session locally BEFORE deferring the submit, so the
+      // exam cannot be re-entered while the submission waits to sync.
+      await _localDataSource.markSessionSubmitted(sessionId);
       await _queueDeferredSubmit(sessionId, examId, answers, submittedAt);
       return _localResultOrFailure(sessionId, examId, error);
     } catch (error) {
@@ -213,11 +228,25 @@ class ExamRepositoryImpl implements ExamRepository {
     String examId,
     Object error,
   ) async {
-    final result = await _localDataSource.buildLocalResult(
+    final local = await _localDataSource.buildLocalResult(
       examId: examId,
       sessionId: sessionId,
     );
-    if (result.totalQuestions > 0) return Right(result);
-    return Left(mapExceptionToFailure(error));
+    if (local.totalQuestions <= 0) return Left(mapExceptionToFailure(error));
+    // Offline: the device has no correct answers (the student payload strips
+    // them), so a locally computed score would be wrong. Report the submission
+    // as accepted with the grade pending sync instead of showing a fake score.
+    return Right(
+      ExamResultModel(
+        examId: examId,
+        score: 0,
+        totalQuestions: local.totalQuestions,
+        correctAnswers: 0,
+        items: const [],
+        visible: false,
+        message:
+            'تم تسليم الامتحان بنجاح.\nسيتم احتساب النتيجة عند الاتصال بالإنترنت.',
+      ),
+    );
   }
 }

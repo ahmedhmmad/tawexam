@@ -60,6 +60,78 @@ export class ResultsService {
     };
   }
 
+  /**
+   * Per-question right/wrong breakdown for a graded session. Only call this
+   * when the exam's showAnswers flag is enabled — it exposes correct answers.
+   */
+  async buildAnswerBreakdown(sessionId: string) {
+    const session = await this.repository.findSessionForGrading(sessionId);
+    if (!session) {
+      throw new AppError("Session not found", 404, "SESSION_NOT_FOUND");
+    }
+
+    const answersByQuestion = new Map(session.answers.map((answer) => [answer.questionId, answer]));
+
+    return [...session.exam.questions]
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+      .map((question) => {
+        const correctChoice = question.choices.find((choice) => choice.isCorrect);
+        const answer = answersByQuestion.get(question.id);
+        const selectedChoice = answer?.choiceId
+          ? question.choices.find((choice) => choice.id === answer.choiceId)
+          : undefined;
+
+        return {
+          questionId: question.id,
+          questionText: question.text,
+          selectedAnswer: selectedChoice?.id ?? null,
+          selectedAnswerText: selectedChoice?.text ?? null,
+          correctAnswer: correctChoice?.id ?? null,
+          correctAnswerText: correctChoice?.text ?? null,
+          isCorrect: selectedChoice !== undefined && selectedChoice.id === correctChoice?.id,
+          explanation: question.explanation
+        };
+      });
+  }
+
+  /**
+   * Shapes a graded result according to the exam's visibility flags:
+   * - showResults=false → no score at all, just a "results later" message
+   * - showAnswers=true  → include the per-question breakdown
+   */
+  async shapeStudentResult(
+    exam: { showResults: boolean; showAnswers: boolean },
+    result: {
+      sessionId: string;
+      score: number;
+      totalQuestions: number;
+      answeredCount: number;
+      correctCount: number;
+      timeTakenSeconds: number;
+      gradedAt: Date;
+    }
+  ) {
+    if (!exam.showResults) {
+      return {
+        visible: false,
+        message: "سيتم عرض النتائج لاحقاً بقرار من المشرف"
+      };
+    }
+
+    return {
+      visible: true,
+      showAnswers: exam.showAnswers,
+      sessionId: result.sessionId,
+      score: result.score,
+      totalQuestions: result.totalQuestions,
+      answeredCount: result.answeredCount,
+      correctCount: result.correctCount,
+      timeTakenSeconds: result.timeTakenSeconds,
+      gradedAt: result.gradedAt,
+      ...(exam.showAnswers ? { items: await this.buildAnswerBreakdown(result.sessionId) } : {})
+    };
+  }
+
   analytics(examId: string) {
     return this.repository.analytics(examId);
   }

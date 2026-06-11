@@ -7,12 +7,16 @@ class ExamResultModel extends ExamResult {
     required super.totalQuestions,
     required super.correctAnswers,
     required super.items,
+    super.visible,
+    super.message,
   });
 
   factory ExamResultModel.fromJson(Map<String, dynamic> json) {
     final data = Map<String, dynamic>.from(json['data'] as Map? ?? json);
     return ExamResultModel(
       examId: '${data['examId'] ?? data['exam_id'] ?? ''}',
+      visible: data['visible'] as bool? ?? true,
+      message: _optional(data['message']),
       score: _readInt(data, 'score'),
       totalQuestions: _readInt(data, 'totalQuestions'),
       correctAnswers: _readInt(
@@ -59,6 +63,13 @@ class ExamResultModel extends ExamResult {
       correctAnswerId: '${json['correctAnswer'] ?? json['correct_answer']}',
       isCorrect:
           json['isCorrect'] as bool? ?? json['is_correct'] as bool? ?? false,
+      questionText: _optional(json['questionText'] ?? json['question_text']),
+      selectedAnswerText: _optional(
+        json['selectedAnswerText'] ?? json['selected_answer_text'],
+      ),
+      correctAnswerText: _optional(
+        json['correctAnswerText'] ?? json['correct_answer_text'],
+      ),
       explanation: _optional(json['explanation']),
     );
   }
