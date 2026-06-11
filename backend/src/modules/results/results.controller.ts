@@ -31,7 +31,8 @@ export class ResultsController {
   }
 
   async analytics(req: Request, res: Response): Promise<Response> {
-    const result = await resultsService.analytics(req.params.id as string);
+    const { from, to } = req.query as unknown as { from?: Date; to?: Date };
+    const result = await resultsService.analytics(req.params.id as string, from, to);
     return sendSuccess(res, result);
   }
 

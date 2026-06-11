@@ -6,6 +6,7 @@ class ExamResultSummaryModel extends ExamResultSummary {
     required super.averageScore,
     required super.passRate,
     required super.completionRate,
+    required super.totalAttempts,
     required super.distribution,
   });
 
@@ -15,6 +16,7 @@ class ExamResultSummaryModel extends ExamResultSummary {
         averageScore: _int(json['averageScore']),
         passRate: _int(json['passRate']),
         completionRate: _int(json['completionRate']),
+        totalAttempts: _int(json['totalAttempts']),
         distribution: (json['distribution'] as List? ?? [])
             .map((e) => _int(e)).toList(),
       );

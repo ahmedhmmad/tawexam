@@ -41,22 +41,32 @@ export class ResultsRepository {
     });
   }
 
-  async analytics(examId: string) {
-    const results = await prisma.examResult.findMany({
-      where: { session: { examId } },
-      include: { session: { include: { answers: true, exam: { include: { questions: true } } } } }
-    });
+  async analytics(examId: string, from?: Date, to?: Date) {
+    const startedAt = from || to ? { gte: from, lte: to } : undefined;
+
+    const [results, totalAttempts] = await Promise.all([
+      prisma.examResult.findMany({
+        where: { session: { examId, ...(startedAt ? { startedAt } : {}) } },
+        include: { session: { include: { exam: { select: { passingScore: true } } } } }
+      }),
+      prisma.examSession.count({
+        where: { examId, ...(startedAt ? { startedAt } : {}) }
+      })
+    ]);
 
     const avg = results.length === 0 ? 0 : results.reduce((sum, item) => sum + item.score, 0) / results.length;
     const passRate =
       results.length === 0
         ? 0
         : (results.filter((item) => item.score >= item.session.exam.passingScore).length / results.length) * 100;
+    const completionRate = totalAttempts === 0 ? 0 : (results.length / totalAttempts) * 100;
 
     return {
       averageScore: Math.round(avg),
       passRate: Math.round(passRate),
-      completionRate: results.length,
+      // Percentage of started sessions that ended up graded
+      completionRate: Math.round(completionRate),
+      totalAttempts,
       distribution: results.map((item) => item.score)
     };
   }

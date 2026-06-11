@@ -6,6 +6,7 @@ class ExamResultSummary extends Equatable {
     required this.averageScore,
     required this.passRate,
     required this.completionRate,
+    required this.totalAttempts,
     required this.distribution,
   });
 
@@ -13,9 +14,10 @@ class ExamResultSummary extends Equatable {
   final int averageScore;
   final int passRate;
   final int completionRate;
+  final int totalAttempts;
   final List<int> distribution;
 
   @override
   List<Object?> get props =>
-      [examId, averageScore, passRate, completionRate, distribution];
+      [examId, averageScore, passRate, completionRate, totalAttempts, distribution];
 }

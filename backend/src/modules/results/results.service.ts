@@ -132,8 +132,8 @@ export class ResultsService {
     };
   }
 
-  analytics(examId: string) {
-    return this.repository.analytics(examId);
+  analytics(examId: string, from?: Date, to?: Date) {
+    return this.repository.analytics(examId, from, to);
   }
 
   async listResults(examId: string) {

@@ -102,8 +102,8 @@ class AdminRepositoryImpl implements AdminRepository {
   }
 
   @override
-  Future<Either<Failure, ExamResultSummary>> getResults(String examId) async {
-    try { return Right(await _remote.getResults(examId)); }
+  Future<Either<Failure, ExamResultSummary>> getResults(String examId, {DateTime? from, DateTime? to}) async {
+    try { return Right(await _remote.getResults(examId, from: from, to: to)); }
     catch (e) { return Left(mapExceptionToFailure(e)); }
   }
 

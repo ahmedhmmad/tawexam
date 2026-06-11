@@ -1,3 +1,4 @@
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -30,6 +31,12 @@ class TawExamAdminApp extends StatelessWidget {
         useMaterial3: true,
       ),
       locale: const Locale('ar'),
+      supportedLocales: const [Locale('ar'), Locale('en')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       builder: (context, child) => Directionality(
         textDirection: TextDirection.rtl,
         child: child!,

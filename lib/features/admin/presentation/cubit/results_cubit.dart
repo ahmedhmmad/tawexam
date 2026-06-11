@@ -16,9 +16,9 @@ class ResultsCubit extends Cubit<ResultsState> {
   final GetResultsUseCase _getResults;
   final ExportResultsUseCase _exportResults;
 
-  Future<void> load(String examId) async {
+  Future<void> load(String examId, {DateTime? from, DateTime? to}) async {
     emit(const ResultsLoading());
-    final result = await _getResults(examId);
+    final result = await _getResults(examId, from: from, to: to);
     result.fold(
       (f) => emit(ResultsError(f.message)),
       (summary) => emit(ResultsLoaded(summary)),

@@ -62,6 +62,6 @@ abstract interface class AdminRepository {
   Future<Either<Failure, String>> exportStudents();
   Future<Either<Failure, UploadResult>> uploadQuestions(String examId, String filePath);
   Future<Either<Failure, Unit>> downloadQuestionsTemplate(String examId);
-  Future<Either<Failure, ExamResultSummary>> getResults(String examId);
+  Future<Either<Failure, ExamResultSummary>> getResults(String examId, {DateTime? from, DateTime? to});
   Future<Either<Failure, String>> exportResults(String examId);
 }

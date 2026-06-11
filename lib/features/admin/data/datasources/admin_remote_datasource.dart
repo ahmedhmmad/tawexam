@@ -16,7 +16,7 @@ abstract interface class AdminRemoteDataSource {
   Future<String> exportStudents();
   Future<UploadResultModel> uploadQuestions(String examId, String filePath);
   Future<void> downloadQuestionsTemplate(String examId);
-  Future<ExamResultSummaryModel> getResults(String examId);
+  Future<ExamResultSummaryModel> getResults(String examId, {DateTime? from, DateTime? to});
   Future<String> exportResults(String examId);
 }
 
@@ -96,8 +96,14 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
   }
 
   @override
-  Future<ExamResultSummaryModel> getResults(String examId) async {
-    final r = await _dio.get<Map<String, dynamic>>('/admin/exams/$examId/results');
+  Future<ExamResultSummaryModel> getResults(String examId, {DateTime? from, DateTime? to}) async {
+    final r = await _dio.get<Map<String, dynamic>>(
+      '/admin/exams/$examId/results',
+      queryParameters: {
+        if (from != null) 'from': from.toIso8601String(),
+        if (to != null) 'to': to.toIso8601String(),
+      },
+    );
     return ExamResultSummaryModel.fromJson(examId, Map<String, dynamic>.from(r.data?['data'] as Map));
   }
 
