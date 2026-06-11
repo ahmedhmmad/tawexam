@@ -7,9 +7,11 @@ import '../cubit/admin_auth_cubit.dart';
 import '../cubit/admin_auth_state.dart';
 import '../cubit/exam_manager_cubit.dart';
 import '../cubit/student_manager_cubit.dart';
+import '../cubit/monitoring_cubit.dart';
 import 'admin_login_page.dart';
 import 'admin_results_overview_page.dart';
 import 'exams_list_page.dart';
+import 'monitoring_page.dart';
 import 'students_page.dart';
 
 class _AdminAuthGate extends StatelessWidget {
@@ -40,6 +42,7 @@ class _AdminShellPageState extends State<AdminShellPage> {
     NavigationRailDestination(icon: Icon(Icons.assignment), label: Text('الامتحانات')),
     NavigationRailDestination(icon: Icon(Icons.people), label: Text('الطلاب')),
     NavigationRailDestination(icon: Icon(Icons.bar_chart), label: Text('النتائج')),
+    NavigationRailDestination(icon: Icon(Icons.podcasts), label: Text('مراقبة مباشرة')),
   ];
 
   @override
@@ -99,10 +102,15 @@ class _AdminShellPageState extends State<AdminShellPage> {
           create: (_) => getIt<StudentManagerCubit>()..load(),
           child: const StudentsContent(),
         );
-      default:
+      case 2:
         return BlocProvider(
           create: (_) => getIt<ExamManagerCubit>()..load(),
           child: const AdminResultsOverviewPage(),
+        );
+      default:
+        return BlocProvider(
+          create: (_) => getIt<MonitoringCubit>()..start(),
+          child: const MonitoringContent(),
         );
     }
   }

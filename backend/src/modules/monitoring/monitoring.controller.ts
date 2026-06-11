@@ -9,6 +9,11 @@ export class MonitoringController {
   health(_req: Request, res: Response): Response {
     return sendSuccess(res, { namespace: "/admin/monitoring" }, "Monitoring ready");
   }
+
+  async activeSessions(_req: Request, res: Response): Promise<Response> {
+    const sessions = await monitoringService.listActiveSessions();
+    return sendSuccess(res, sessions);
+  }
 }
 
 export { monitoringService };
