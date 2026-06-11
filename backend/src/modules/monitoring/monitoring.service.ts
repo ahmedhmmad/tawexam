@@ -2,9 +2,16 @@ import type { Namespace, Socket } from "socket.io";
 
 import { verifyAccessToken } from "../../config/jwt.js";
 import { getMonitoringNamespace } from "../../config/socket.js";
+import { MonitoringRepository } from "./monitoring.repository.js";
 import type { MonitoringEvents } from "./monitoring.types.js";
 
 export class MonitoringService {
+  constructor(private readonly repository: MonitoringRepository = new MonitoringRepository()) {}
+
+  listActiveSessions() {
+    return this.repository.listActiveSessions();
+  }
+
   emitEvent<T extends keyof MonitoringEvents>(event: T, payload: MonitoringEvents[T]): void {
     getMonitoringNamespace().emit(event, payload);
   }
