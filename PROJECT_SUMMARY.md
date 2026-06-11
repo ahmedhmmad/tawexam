@@ -128,7 +128,7 @@ TawExam (توجيهي) is an offline-first electronic exam platform for Palestin
 - **Gaza timezone (UTC+3)** — dates use device local time, no manual offset (the device is assumed to be in Gaza)
 - **Branches**: Fixed list علمي/أدبي/شرعي/صناعي, dropdown selection (no free typing)
 - **Session persistence**: Student stays logged in across app restarts (critical for unstable internet during exams)
-- **Exam-window timer**: Timer runs based on the original exam start time, not per session, so a student who quits at 30:33 elapsed gets only the remaining time on retry
+- **Per-student exam window**: A student may start any time between the exam's startAt and endAt and gets the full duration (capped by endAt). The window is anchored to the student's FIRST session — quitting at 30:33 elapsed gives only the remaining time on retry, never extra time
 - **Result privacy**: Students see only their score; correct answer details are hidden unless admin enables `showAnswers`
 - **Per-student attempts**: One student's attempt count doesn't affect another student
 - **Offline-first**: Answers are persisted locally first, then synced; the app must work without internet during the exam

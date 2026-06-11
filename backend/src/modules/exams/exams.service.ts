@@ -66,7 +66,7 @@ export class ExamsService {
       throw new AppError("No active exam available", 404, "EXAM_NOT_AVAILABLE");
     }
 
-    const now = new Date();
+
     const result = [];
 
     for (const exam of exams) {
@@ -76,9 +76,13 @@ export class ExamsService {
         continue; // Skip this exam, student used all attempts
       }
 
-      // For ACTIVE exams, check if endAt has passed
-      if (exam.status === 'ACTIVE' && exam.endAt.getTime() < now.getTime()) {
-        continue; // Skip expired active exams
+      // Skip ACTIVE exams the student can no longer start: endAt passed, or
+      // their personal window (anchored to their first session) is used up
+      if (exam.status === 'ACTIVE') {
+        const remaining = await this.sessionsService.getRemainingWindowSeconds(exam, studentId);
+        if (remaining <= 0) {
+          continue;
+        }
       }
 
       result.push({
@@ -122,7 +126,7 @@ export class ExamsService {
       return [];
     }
 
-    const now = new Date();
+
     const result = [];
 
     for (const exam of exams) {
@@ -130,8 +134,13 @@ export class ExamsService {
       if (exam.status === 'ACTIVE' && attemptCount >= exam.maxAttempts) {
         continue;
       }
-      if (exam.status === 'ACTIVE' && exam.endAt.getTime() < now.getTime()) {
-        continue;
+      // Skip ACTIVE exams the student can no longer start: endAt passed, or
+      // their personal window (anchored to their first session) is used up
+      if (exam.status === 'ACTIVE') {
+        const remaining = await this.sessionsService.getRemainingWindowSeconds(exam, studentId);
+        if (remaining <= 0) {
+          continue;
+        }
       }
 
       result.push({

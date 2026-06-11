@@ -37,6 +37,14 @@ export class SessionsRepository {
     });
   }
 
+  /** Earliest session of any status — anchors the per-student exam window. */
+  findFirstSession(studentId: string, examId: string) {
+    return prisma.examSession.findFirst({
+      where: { studentId, examId },
+      orderBy: { startedAt: "asc" }
+    });
+  }
+
   findByStudentAndExam(studentId: string, examId: string) {
     return prisma.examSession.findFirst({
       where: { studentId, examId },

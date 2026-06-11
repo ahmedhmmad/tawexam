@@ -28,11 +28,24 @@ export class SessionsService {
       throw new AppError("Maximum attempts reached", 400, "MAX_ATTEMPTS_REACHED");
     }
 
-    // Timer is based on the exam window: remaining = durationMinutes - elapsed since startAt
+    // Per-student exam window: a student may start any time between startAt
+    // and endAt and gets the full duration. Retries stay anchored to the
+    // student's FIRST session, so quitting never grants extra time. Remaining
+    // time is always capped by the exam's endAt.
     const now = new Date();
-    const examElapsedSeconds = Math.floor((now.getTime() - exam.startAt.getTime()) / 1000);
+    if (now.getTime() < exam.startAt.getTime()) {
+      throw new AppError("Exam has not started yet", 400, "EXAM_NOT_STARTED");
+    }
+    if (now.getTime() >= exam.endAt.getTime()) {
+      throw new AppError("Exam time has expired", 400, "EXAM_TIME_EXPIRED");
+    }
+
+    const firstSession = await this.repository.findFirstSession(studentId, examId);
+    const anchor = firstSession ? firstSession.startedAt : now;
+    const elapsedSeconds = Math.max(0, Math.floor((now.getTime() - anchor.getTime()) / 1000));
     const examTotalSeconds = exam.durationMinutes * 60;
-    const remainingSeconds = Math.max(0, examTotalSeconds - examElapsedSeconds);
+    const untilEndSeconds = Math.floor((exam.endAt.getTime() - now.getTime()) / 1000);
+    const remainingSeconds = Math.min(examTotalSeconds - elapsedSeconds, untilEndSeconds);
 
     if (remainingSeconds <= 0) {
       throw new AppError("Exam time has expired", 400, "EXAM_TIME_EXPIRED");
@@ -59,6 +72,25 @@ export class SessionsService {
 
   async getAttemptCount(examId: string, studentId: string): Promise<number> {
     return this.repository.countAttempts(studentId, examId);
+  }
+
+  /**
+   * Seconds left in the student's personal window for this exam (anchored to
+   * their first session, capped by endAt). Used by exam listings so students
+   * are never shown an exam they can no longer start.
+   */
+  async getRemainingWindowSeconds(
+    exam: { id: string; startAt: Date; endAt: Date; durationMinutes: number },
+    studentId: string
+  ): Promise<number> {
+    const now = Date.now();
+    if (now >= exam.endAt.getTime()) return 0;
+
+    const firstSession = await this.repository.findFirstSession(studentId, exam.id);
+    const anchor = firstSession ? firstSession.startedAt.getTime() : now;
+    const elapsedSeconds = Math.max(0, Math.floor((now - anchor) / 1000));
+    const untilEndSeconds = Math.floor((exam.endAt.getTime() - now) / 1000);
+    return Math.min(exam.durationMinutes * 60 - elapsedSeconds, untilEndSeconds);
   }
 
   async getStudentSession(examId: string, studentId: string) {
