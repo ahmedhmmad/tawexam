@@ -47,16 +47,23 @@ class ExamCubit extends Cubit<ExamState> {
   StreamSubscription<Duration>? _timerSubscription;
   ExamReady? _lastSubmittedReady;
 
-  Future<void> loadForStudent({required Student student}) async {
+  /// Loads the exam flow. When [exam] is provided (the card the student
+  /// tapped), it is used directly; otherwise falls back to the backend's
+  /// single "current" exam.
+  Future<void> loadForStudent({required Student student, Exam? exam}) async {
     emit(const ExamLoading());
     // Cancel any running timer subscription from a previous session
     await _timerSubscription?.cancel();
     _timerSubscription = null;
     await _countdownService.pause();
+    if (exam != null) {
+      await _loadSessionQuestionsAndProgress(student, exam);
+      return;
+    }
     final examResult = await _loadExamUseCase();
     await examResult.fold(
       (failure) async => emit(ExamError(failure.message)),
-      (exam) => _loadSessionQuestionsAndProgress(student, exam),
+      (loaded) => _loadSessionQuestionsAndProgress(student, loaded),
     );
   }
 

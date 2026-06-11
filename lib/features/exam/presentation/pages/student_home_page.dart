@@ -10,6 +10,7 @@ import '../../../../core/storage/local_storage_service.dart';
 import '../../../auth/domain/entities/student.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/presentation/pages/login_page.dart';
+import '../../data/models/exam_model.dart';
 import '../cubit/exam_cubit.dart';
 import 'instructions_page.dart';
 
@@ -326,7 +327,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: canStart ? () => _startExamFlow(context) : null,
+                onPressed: canStart ? () => _startExamFlow(context, exam) : null,
                 icon: const Icon(Icons.play_arrow),
                 label: Text(
                   canStart ? 'بدء الامتحان' : 'الامتحان لم يبدأ بعد',
@@ -369,10 +370,10 @@ class _StudentHomePageState extends State<StudentHomePage> {
     );
   }
 
-  void _startExamFlow(BuildContext context) {
+  void _startExamFlow(BuildContext context, Map<String, dynamic> exam) {
     final cubit = context.read<ExamCubit>();
-    // Reload exam + questions fresh before navigating
-    cubit.loadForStudent(student: widget.student);
+    // Load the exam the student actually tapped (not the backend's "first")
+    cubit.loadForStudent(student: widget.student, exam: ExamModel.fromJson(exam));
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => BlocProvider.value(
