@@ -9,8 +9,9 @@ datasource db {
 
 enum AdminRole {
   SUPER_ADMIN
-  EXAM_MANAGER
-  VIEWER
+  ADMIN
+  SUPERVISOR
+  TEACHER
 }
 
 enum ExamStatus {

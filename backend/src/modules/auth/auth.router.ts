@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
+import { authenticate } from "../../middlewares/auth.js";
 import { adminLoginRateLimiter, studentLoginRateLimiter } from "../../middlewares/rateLimiter.js";
 import { validateBody } from "../../middlewares/validate.js";
 import { AuthController } from "./auth.controller.js";
@@ -15,4 +16,5 @@ studentAuthRouter.post("/logout", validateBody(refreshTokenSchema), asyncHandler
 
 export const adminAuthRouter = Router();
 adminAuthRouter.post("/login", adminLoginRateLimiter, validateBody(adminLoginSchema), asyncHandler(controller.adminLogin));
+adminAuthRouter.get("/me", authenticate, asyncHandler(controller.me));
 

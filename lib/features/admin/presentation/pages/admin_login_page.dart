@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../cubit/admin_auth_cubit.dart';
 import '../cubit/admin_auth_state.dart';
-import 'admin_shell_page.dart';
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({super.key});
@@ -31,18 +30,11 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     return Scaffold(
       body: BlocConsumer<AdminAuthCubit, AdminAuthState>(
         listener: (ctx, state) {
+          // On success the auth gate (main_admin) reactively swaps to the
+          // shell — no manual navigation needed here.
           if (state is AdminAuthFailure) {
             ScaffoldMessenger.of(ctx)
                 .showSnackBar(SnackBar(content: Text(state.message)));
-          }
-          if (state is AdminAuthSuccess) {
-            Navigator.of(ctx).pushReplacement(
-              MaterialPageRoute(
-                  builder: (_) => BlocProvider.value(
-                        value: ctx.read<AdminAuthCubit>(),
-                        child: const AdminShellPage(),
-                      )),
-            );
           }
         },
         builder: (ctx, state) => Center(
@@ -56,23 +48,28 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Admin Login',
+                    const Icon(Icons.admin_panel_settings, size: 56, color: Color(0xFF1E40AF)),
+                    const SizedBox(height: 12),
+                    Text('لوحة تحكم توجيهي',
+                        textAlign: TextAlign.center,
                         style: Theme.of(ctx).textTheme.headlineSmall),
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _usernameCtrl,
+                      textDirection: TextDirection.ltr,
                       decoration: const InputDecoration(
-                          labelText: 'Username',
+                          labelText: 'اسم المستخدم',
                           border: OutlineInputBorder()),
                       validator: (v) =>
-                          (v ?? '').isEmpty ? 'Required' : null,
+                          (v ?? '').isEmpty ? 'مطلوب' : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordCtrl,
                       obscureText: _obscure,
+                      textDirection: TextDirection.ltr,
                       decoration: InputDecoration(
-                        labelText: 'Password',
+                        labelText: 'كلمة المرور',
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(_obscure
@@ -83,7 +80,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         ),
                       ),
                       validator: (v) =>
-                          (v ?? '').isEmpty ? 'Required' : null,
+                          (v ?? '').isEmpty ? 'مطلوب' : null,
                     ),
                     const SizedBox(height: 24),
                     FilledButton(
@@ -94,7 +91,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                               dimension: 20,
                               child: CircularProgressIndicator(
                                   strokeWidth: 2))
-                          : const Text('Login'),
+                          : const Text('دخول'),
                     ),
                   ],
                 ),

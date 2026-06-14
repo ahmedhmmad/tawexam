@@ -13,6 +13,7 @@ import { setSocketServer } from "./config/socket.js";
 import { requestId } from "./middlewares/requestId.js";
 import { globalRateLimiter } from "./middlewares/rateLimiter.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
+import { adminUsersRouter } from "./modules/admin-users/admin-users.router.js";
 import { adminAuthRouter, studentAuthRouter } from "./modules/auth/auth.router.js";
 import { answersRouter } from "./modules/answers/answers.router.js";
 import { adminExamsRouter, studentExamsRouter } from "./modules/exams/exams.router.js";
@@ -73,6 +74,7 @@ app.get("/health", (_req, res) => {
 app.use(`${env.API_PREFIX}/auth`, studentAuthRouter);
 app.use(`${env.API_PREFIX}/admin/auth`, adminAuthRouter);
 app.use(`${env.API_PREFIX}/admin/students`, studentsRouter);
+app.use(`${env.API_PREFIX}/admin/users`, adminUsersRouter);
 app.use(`${env.API_PREFIX}/answers`, answersRouter);
 app.use(`${env.API_PREFIX}/exam`, studentExamsRouter);
 app.use(`${env.API_PREFIX}/exam`, studentSessionsRouter);

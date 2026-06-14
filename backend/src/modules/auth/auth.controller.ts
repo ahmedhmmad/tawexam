@@ -25,5 +25,10 @@ export class AuthController {
     await authService.logout(req.body.refreshToken);
     return sendSuccess(res, { loggedOut: true }, "Logged out");
   }
+
+  async me(req: Request, res: Response): Promise<Response> {
+    const user = await authService.currentAdmin(req.user!.id);
+    return sendSuccess(res, user);
+  }
 }
 

@@ -1,10 +1,9 @@
 import { Router } from "express";
 import multer from "multer";
-import { AdminRole } from "@prisma/client";
 
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticate } from "../../middlewares/auth.js";
-import { requireAdminRole } from "../../middlewares/rbac.js";
+import { requireAdminRole, ROLE_GROUPS } from "../../middlewares/rbac.js";
 import { validateBody, validateParams, validateQuery } from "../../middlewares/validate.js";
 import {
   resetPasswordSchema,
@@ -20,13 +19,13 @@ const controller = new StudentsController();
 
 export const studentsRouter = Router();
 
-studentsRouter.use(authenticate, requireAdminRole([AdminRole.SUPER_ADMIN, AdminRole.EXAM_MANAGER, AdminRole.VIEWER]));
+studentsRouter.use(authenticate, requireAdminRole(ROLE_GROUPS.MANAGERS));
 studentsRouter.get("/", validateQuery(studentQuerySchema), asyncHandler(controller.list));
-studentsRouter.post("/", requireAdminRole([AdminRole.SUPER_ADMIN, AdminRole.EXAM_MANAGER]), validateBody(studentCreateSchema), asyncHandler(controller.create));
-studentsRouter.put("/:id", requireAdminRole([AdminRole.SUPER_ADMIN, AdminRole.EXAM_MANAGER]), validateParams(studentIdParamsSchema), validateBody(studentUpdateSchema), asyncHandler(controller.update));
-studentsRouter.delete("/:id", requireAdminRole([AdminRole.SUPER_ADMIN]), validateParams(studentIdParamsSchema), asyncHandler(controller.remove));
-studentsRouter.post("/bulk-delete", requireAdminRole([AdminRole.SUPER_ADMIN]), asyncHandler(controller.bulkDelete));
-studentsRouter.post("/import", requireAdminRole([AdminRole.SUPER_ADMIN, AdminRole.EXAM_MANAGER]), upload.single("file"), asyncHandler(controller.import));
-studentsRouter.get("/export", requireAdminRole([AdminRole.SUPER_ADMIN, AdminRole.EXAM_MANAGER, AdminRole.VIEWER]), asyncHandler(controller.export));
-studentsRouter.post("/:id/reset-password", requireAdminRole([AdminRole.SUPER_ADMIN, AdminRole.EXAM_MANAGER]), validateParams(studentIdParamsSchema), validateBody(resetPasswordSchema), asyncHandler(controller.resetPassword));
+studentsRouter.post("/", requireAdminRole(ROLE_GROUPS.MANAGERS), validateBody(studentCreateSchema), asyncHandler(controller.create));
+studentsRouter.put("/:id", requireAdminRole(ROLE_GROUPS.MANAGERS), validateParams(studentIdParamsSchema), validateBody(studentUpdateSchema), asyncHandler(controller.update));
+studentsRouter.delete("/:id", requireAdminRole(ROLE_GROUPS.MANAGERS), validateParams(studentIdParamsSchema), asyncHandler(controller.remove));
+studentsRouter.post("/bulk-delete", requireAdminRole(ROLE_GROUPS.MANAGERS), asyncHandler(controller.bulkDelete));
+studentsRouter.post("/import", requireAdminRole(ROLE_GROUPS.MANAGERS), upload.single("file"), asyncHandler(controller.import));
+studentsRouter.get("/export", requireAdminRole(ROLE_GROUPS.MANAGERS), asyncHandler(controller.export));
+studentsRouter.post("/:id/reset-password", requireAdminRole(ROLE_GROUPS.MANAGERS), validateParams(studentIdParamsSchema), validateBody(resetPasswordSchema), asyncHandler(controller.resetPassword));
 
