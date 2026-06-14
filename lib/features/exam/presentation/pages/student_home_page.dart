@@ -36,7 +36,6 @@ class StudentHomePage extends StatefulWidget {
 
 class _StudentHomePageState extends State<StudentHomePage> {
   final Dio _dio = getIt<ApiClient>().dio;
-  Map<String, dynamic>? _currentExam;
   List<Map<String, dynamic>> _allExams = [];
   List<Map<String, dynamic>> _pastExams = [];
   bool _loading = true;
@@ -58,19 +57,15 @@ class _StudentHomePageState extends State<StudentHomePage> {
         final data = body['data'];
         if (data is List && data.isNotEmpty) {
           _allExams = data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-          _currentExam = _allExams.first;
         } else {
-          _currentExam = null;
           _allExams = [];
         }
       } on DioException catch (e) {
-        _currentExam = null;
         _allExams = [];
         if (e.response?.statusCode != 404) {
           _error = _shortError(e.response?.statusCode);
         }
       } catch (_) {
-        _currentExam = null;
         _allExams = [];
         _error = 'خطأ مؤقت';
       }
@@ -120,29 +115,77 @@ class _StudentHomePageState extends State<StudentHomePage> {
   }
 
   Widget _buildHeader(BuildContext context, Color branchCol) {
+    final name = widget.student.fullName.trim();
+    final initial = name.isNotEmpty ? name.characters.first : '؟';
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [branchCol, branchCol.withValues(alpha: 0.75)],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [branchCol, branchCol.withValues(alpha: 0.7)],
         ),
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
         ),
       ),
-      child: Row(
+      // Decorative translucent circles add depth without any image weight.
+      child: Stack(
         children: [
-          Expanded(
+          Positioned(
+            top: -30,
+            left: -20,
+            child: _decorCircle(110, Colors.white.withValues(alpha: 0.08)),
+          ),
+          Positioned(
+            bottom: -24,
+            left: 60,
+            child: _decorCircle(70, Colors.white.withValues(alpha: 0.06)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('مرحباً', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
-                const SizedBox(height: 4),
-                Text(widget.student.fullName,
-                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 26,
+                      backgroundColor: Colors.white,
+                      child: Text(
+                        initial,
+                        style: TextStyle(
+                          color: branchCol,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_greeting(),
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13)),
+                          const SizedBox(height: 2),
+                          Text(name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.logout, color: Colors.white),
+                      tooltip: 'تسجيل الخروج',
+                      onPressed: _logout,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     _HeaderBadge(Icons.confirmation_number, widget.student.seatNumber),
@@ -154,14 +197,24 @@ class _StudentHomePageState extends State<StudentHomePage> {
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            tooltip: 'تسجيل الخروج',
-            onPressed: _logout,
-          ),
         ],
       ),
     );
+  }
+
+  static Widget _decorCircle(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    );
+  }
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'صباح الخير 👋';
+    if (hour < 18) return 'مساء الخير 👋';
+    return 'مساءكم بالخير 👋';
   }
 
   Widget _buildBody(BuildContext context) {
@@ -289,17 +342,16 @@ class _StudentHomePageState extends State<StudentHomePage> {
               ],
             ),
             const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 12),
-            _ExamInfoTile(icon: Icons.timer, label: 'المدة', value: '$duration دقيقة'),
-            const SizedBox(height: 8),
-            _ExamInfoTile(icon: Icons.quiz, label: 'الأسئلة', value: '$questions سؤال'),
-            const SizedBox(height: 8),
-            if (maxAttempts > 1)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _ExamInfoTile(icon: Icons.repeat, label: 'المحاولات', value: '$maxAttempts'),
-              ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _InfoPill(icon: Icons.timer_outlined, text: '$duration دقيقة'),
+                _InfoPill(icon: Icons.quiz_outlined, text: '$questions سؤال'),
+                if (maxAttempts > 1)
+                  _InfoPill(icon: Icons.repeat, text: 'محاولات: $maxAttempts'),
+              ],
+            ),
             // Status indicator for scheduled exams
             if (isScheduled) ...[
               const SizedBox(height: 8),
@@ -323,18 +375,12 @@ class _StudentHomePageState extends State<StudentHomePage> {
                 ),
               ),
             ],
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: canStart ? () => _startExamFlow(context, exam) : null,
-                icon: const Icon(Icons.play_arrow),
-                label: Text(
-                  canStart ? 'بدء الامتحان' : 'الامتحان لم يبدأ بعد',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-              ),
+            const SizedBox(height: 18),
+            _StartExamButton(
+              enabled: canStart,
+              color: _branchColor(widget.student.branch),
+              label: canStart ? 'بدء الامتحان' : 'الامتحان لم يبدأ بعد',
+              onPressed: canStart ? () => _startExamFlow(context, exam) : null,
             ),
           ],
         ),
@@ -453,21 +499,85 @@ class _BranchBadge extends StatelessWidget {
   }
 }
 
-class _ExamInfoTile extends StatelessWidget {
-  const _ExamInfoTile({required this.icon, required this.label, required this.value});
+/// Compact info chip for exam metadata (duration, question count, attempts).
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({required this.icon, required this.text});
   final IconData icon;
-  final String label;
-  final String value;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: Colors.grey.shade600),
-        const SizedBox(width: 8),
-        Text('$label: ', style: TextStyle(color: Colors.grey.shade600)),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.grey.shade700),
+          const SizedBox(width: 6),
+          Text(text, style: TextStyle(fontSize: 13, color: Colors.grey.shade800, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Full-width gradient call-to-action that draws the eye to start the exam.
+class _StartExamButton extends StatelessWidget {
+  const _StartExamButton({
+    required this.enabled,
+    required this.color,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final bool enabled;
+  final Color color;
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onPressed,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: enabled
+                  ? LinearGradient(colors: [color, color.withValues(alpha: 0.78)])
+                  : null,
+              color: enabled ? null : Colors.grey.shade300,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(enabled ? Icons.play_arrow_rounded : Icons.lock_clock,
+                      color: enabled ? Colors.white : Colors.grey.shade600, size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: enabled ? Colors.white : Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
