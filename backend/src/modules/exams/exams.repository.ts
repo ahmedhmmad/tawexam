@@ -3,8 +3,9 @@ import { ExamStatus, SessionStatus } from "@prisma/client";
 import { prisma } from "../../config/prisma.js";
 
 export class ExamsRepository {
-  list() {
+  list(createdById?: string) {
     return prisma.exam.findMany({
+      where: createdById ? { createdById } : undefined,
       include: {
         _count: { select: { questions: true, sessions: true } }
       },

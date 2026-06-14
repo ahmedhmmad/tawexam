@@ -17,6 +17,7 @@ import '../timer/countdown_service.dart';
 
 // Admin imports
 import '../../features/admin/data/datasources/admin_remote_datasource.dart';
+import '../../features/admin/data/datasources/admin_users_remote_datasource.dart';
 import '../../features/admin/data/datasources/monitoring_remote_datasource.dart';
 import '../../features/admin/data/datasources/monitoring_socket_service.dart';
 import '../../features/admin/data/repositories/admin_repository_impl.dart';
@@ -34,6 +35,7 @@ import '../../features/admin/domain/usecases/update_exam_usecase.dart';
 import '../../features/admin/domain/usecases/update_exam_status_usecase.dart';
 import '../../features/admin/domain/usecases/upload_questions_usecase.dart';
 import '../../features/admin/presentation/cubit/admin_auth_cubit.dart';
+import '../../features/admin/presentation/cubit/admin_users_cubit.dart';
 import '../../features/admin/presentation/cubit/monitoring_cubit.dart';
 import '../../features/admin/presentation/cubit/exam_manager_cubit.dart';
 import '../../features/admin/presentation/cubit/question_upload_cubit.dart';
@@ -177,6 +179,10 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<MonitoringRemoteDataSource>(
       () => MonitoringRemoteDataSourceImpl(getIt<ApiClient>().dio),
     )
+    ..registerLazySingleton<AdminUsersRemoteDataSource>(
+      () => AdminUsersRemoteDataSourceImpl(getIt<ApiClient>().dio),
+    )
+    ..registerFactory(() => AdminUsersCubit(getIt()))
     ..registerFactory(() => MonitoringCubit(
           dataSource: getIt(),
           // New socket per cubit: connection lifecycle follows the page

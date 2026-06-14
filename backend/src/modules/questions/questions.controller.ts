@@ -2,17 +2,20 @@ import type { Request, Response } from "express";
 
 import { sendSuccess } from "../../utils/api-response.js";
 import { AuditLogService } from "../../utils/audit-log.service.js";
+import { assertExamOwnership, assertQuestionOwnership } from "../exams/exam-ownership.js";
 import { QuestionsService } from "./questions.service.js";
 
 const questionsService = new QuestionsService();
 
 export class QuestionsController {
   async list(req: Request, res: Response): Promise<Response> {
+    await assertExamOwnership(req.params.id as string, req.user);
     const questions = await questionsService.listByExam(req.params.id as string);
     return sendSuccess(res, questions);
   }
 
   async create(req: Request, res: Response): Promise<Response> {
+    await assertExamOwnership(req.params.id as string, req.user);
     const question = await questionsService.create(req.params.id as string, req.body);
     await AuditLogService.log({
       adminId: req.user!.id,
@@ -25,6 +28,7 @@ export class QuestionsController {
   }
 
   async update(req: Request, res: Response): Promise<Response> {
+    await assertQuestionOwnership(req.params.id as string, req.user);
     const question = await questionsService.update(req.params.id as string, req.body);
     await AuditLogService.log({
       adminId: req.user!.id,
@@ -37,6 +41,7 @@ export class QuestionsController {
   }
 
   async remove(req: Request, res: Response): Promise<Response> {
+    await assertQuestionOwnership(req.params.id as string, req.user);
     await questionsService.delete(req.params.id as string);
     await AuditLogService.log({
       adminId: req.user!.id,
@@ -53,6 +58,7 @@ export class QuestionsController {
   }
 
   async importQuestions(req: Request, res: Response): Promise<Response> {
+    await assertExamOwnership(req.params.id as string, req.user);
     const result = await questionsService.importWorkbook(
       req.params.id as string,
       req.file as Express.Multer.File,

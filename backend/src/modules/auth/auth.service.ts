@@ -108,6 +108,15 @@ export class AuthService {
     await redis.del(this.refreshKey(payload.jti ?? ""));
   }
 
+  /** Current admin identity for restoring the session on app restart. */
+  async currentAdmin(adminId: string): Promise<{ id: string; username: string; role: string }> {
+    const admin = await this.repository.findAdminById(adminId);
+    if (!admin || !admin.isActive) {
+      throw new AppError("Admin account unavailable", 401, "INVALID_ACCOUNT");
+    }
+    return { id: admin.id, username: admin.username, role: admin.role };
+  }
+
   private async issueTokens(
     payload: JwtPayloadBase,
     user: LoginResult["user"]

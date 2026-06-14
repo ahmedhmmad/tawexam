@@ -33,8 +33,8 @@ export class ExamsController {
     return sendSuccess(res, result, "Exam submitted");
   }
 
-  async list(_req: Request, res: Response): Promise<Response> {
-    const exams = await examsService.list();
+  async list(req: Request, res: Response): Promise<Response> {
+    const exams = await examsService.list(req.user);
     return sendSuccess(res, exams);
   }
 
@@ -51,7 +51,7 @@ export class ExamsController {
   }
 
   async update(req: Request, res: Response): Promise<Response> {
-    const exam = await examsService.update(req.params.id as string, req.body);
+    const exam = await examsService.update(req.params.id as string, req.body, req.user);
     await AuditLogService.log({
       adminId: req.user!.id,
       action: "UPDATE",
@@ -63,7 +63,7 @@ export class ExamsController {
   }
 
   async remove(req: Request, res: Response): Promise<Response> {
-    await examsService.delete(req.params.id as string);
+    await examsService.delete(req.params.id as string, req.user);
     await AuditLogService.log({
       adminId: req.user!.id,
       action: "DELETE",
@@ -74,7 +74,7 @@ export class ExamsController {
   }
 
   async duplicate(req: Request, res: Response): Promise<Response> {
-    const exam = await examsService.duplicate(req.params.id as string, req.user!.id);
+    const exam = await examsService.duplicate(req.params.id as string, req.user!.id, req.user);
     if (!exam) {
       return sendSuccess(res, null, "Exam not found", 404);
     }
@@ -89,7 +89,7 @@ export class ExamsController {
   }
 
   async updateStatus(req: Request, res: Response): Promise<Response> {
-    const exam = await examsService.updateStatus(req.params.id as string, req.body.status);
+    const exam = await examsService.updateStatus(req.params.id as string, req.body.status, req.user);
     await AuditLogService.log({
       adminId: req.user!.id,
       action: "UPDATE_STATUS",

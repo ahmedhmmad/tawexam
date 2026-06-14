@@ -1,6 +1,8 @@
 // lib/features/admin/presentation/cubit/admin_auth_state.dart
 import 'package:equatable/equatable.dart';
 
+import '../../domain/entities/admin_role.dart';
+
 sealed class AdminAuthState extends Equatable {
   const AdminAuthState();
   @override
@@ -16,10 +18,11 @@ class AdminAuthLoading extends AdminAuthState {
 }
 
 class AdminAuthSuccess extends AdminAuthState {
-  const AdminAuthSuccess(this.username);
+  const AdminAuthSuccess({required this.username, required this.role});
   final String username;
+  final AdminRole role;
   @override
-  List<Object?> get props => [username];
+  List<Object?> get props => [username, role];
 }
 
 class AdminAuthFailure extends AdminAuthState {

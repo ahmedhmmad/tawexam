@@ -3,6 +3,7 @@ import { ExamStatus, SessionStatus } from "@prisma/client";
 import { AppError } from "../../utils/app-error.js";
 import { ResultsService } from "../results/results.service.js";
 import { SessionsService } from "../sessions/sessions.service.js";
+import { assertExamOwnership, isTeacher, type ExamActor } from "./exam-ownership.js";
 import { ExamsRepository } from "./exams.repository.js";
 
 export class ExamsService {
@@ -12,8 +13,9 @@ export class ExamsService {
     private readonly resultsService: ResultsService = new ResultsService()
   ) {}
 
-  list() {
-    return this.repository.list();
+  // Teachers see only their own exams; other roles see all.
+  list(actor?: ExamActor) {
+    return this.repository.list(isTeacher(actor) ? actor!.id : undefined);
   }
 
   create(payload: {
@@ -43,11 +45,13 @@ export class ExamsService {
     });
   }
 
-  update(id: string, payload: Record<string, unknown>) {
+  async update(id: string, payload: Record<string, unknown>, actor?: ExamActor) {
+    await assertExamOwnership(id, actor);
     return this.repository.update(id, payload);
   }
 
-  async delete(id: string) {
+  async delete(id: string, actor?: ExamActor) {
+    await assertExamOwnership(id, actor);
     const exam = await this.repository.findById(id);
     if (!exam) {
       throw new AppError("Exam not found", 404, "EXAM_NOT_FOUND");
@@ -191,11 +195,13 @@ export class ExamsService {
     }));
   }
 
-  duplicate(id: string, adminId: string) {
+  async duplicate(id: string, adminId: string, actor?: ExamActor) {
+    await assertExamOwnership(id, actor);
     return this.repository.duplicate(id, adminId);
   }
 
-  async updateStatus(id: string, status: ExamStatus) {
+  async updateStatus(id: string, status: ExamStatus, actor?: ExamActor) {
+    await assertExamOwnership(id, actor);
     const exam = await this.repository.findById(id);
     if (!exam) {
       throw new AppError("Exam not found", 404, "EXAM_NOT_FOUND");
