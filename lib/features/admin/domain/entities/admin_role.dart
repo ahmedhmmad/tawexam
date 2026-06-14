@@ -7,7 +7,7 @@ enum AdminRole {
   unknown;
 
   static AdminRole fromApi(String? value) {
-    switch (value) {
+    switch (value?.trim().toUpperCase()) {
       case 'SUPER_ADMIN':
         return AdminRole.superAdmin;
       case 'ADMIN':

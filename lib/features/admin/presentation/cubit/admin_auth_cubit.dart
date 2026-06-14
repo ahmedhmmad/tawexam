@@ -1,4 +1,6 @@
 // lib/features/admin/presentation/cubit/admin_auth_cubit.dart
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/network/api_client.dart';
@@ -59,20 +61,28 @@ class AdminAuthCubit extends Cubit<AdminAuthState> {
   }
 
   Future<void> logout() async {
-    // Revoke the refresh token server-side before clearing locally (best
-    // effort — clear regardless so the user always ends up logged out).
+    // Redirect immediately: read the refresh token, clear the local session,
+    // and flip to logged-out state right away so the gate shows the login page
+    // without waiting on the network. Revoke the refresh token server-side in
+    // the background (best effort).
+    String? refreshToken;
     try {
-      final refreshToken = await _tokenProvider.readRefreshToken();
-      if (refreshToken != null && refreshToken.isNotEmpty) {
-        await _apiClient.dio.post<void>(
-          '/auth/logout',
-          data: {'refreshToken': refreshToken},
-        );
-      }
+      refreshToken = await _tokenProvider.readRefreshToken();
     } catch (_) {
-      // ignore network/logout errors
+      // ignore storage errors
     }
     await _tokenProvider.clearTokens();
     emit(const AdminAuthInitial());
+
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      final token = refreshToken;
+      unawaited(() async {
+        try {
+          await _apiClient.dio.post<void>('/auth/logout', data: {'refreshToken': token});
+        } catch (_) {
+          // best effort — already logged out locally
+        }
+      }());
+    }
   }
 }
