@@ -97,7 +97,7 @@ export class ExamsRepository {
         status: { in: ['SUBMITTED', 'EXPIRED'] }
       },
       include: {
-        exam: { select: { subjectNameAr: true, subjectNameEn: true } },
+        exam: { select: { subjectNameAr: true, subjectNameEn: true, showResults: true } },
         result: { select: { score: true } }
       },
       orderBy: { submittedAt: 'desc' },
@@ -109,7 +109,10 @@ export class ExamsRepository {
       subjectNameAr: s.exam.subjectNameAr,
       subjectNameEn: s.exam.subjectNameEn,
       submittedAt: s.submittedAt?.toISOString() ?? s.startedAt.toISOString(),
-      score: s.result?.score ?? null,
+      // Only expose the score once the admin/teacher has enabled result viewing;
+      // otherwise the home-page history would leak hidden results.
+      score: s.exam.showResults ? (s.result?.score ?? null) : null,
+      resultVisible: s.exam.showResults,
       status: s.status
     }));
   }

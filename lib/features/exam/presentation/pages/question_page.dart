@@ -6,7 +6,6 @@ import '../cubit/exam_state.dart';
 import '../widgets/exam_header.dart';
 import '../widgets/exam_image.dart';
 import '../widgets/question_palette.dart';
-import '../widgets/radio_group.dart';
 import 'review_page.dart';
 
 class QuestionPage extends StatelessWidget {
@@ -88,49 +87,48 @@ class _QuestionBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final question = ready.currentQuestion;
+    final selected = ready.answers[question.id];
+    // Give the image generous room (up to ~42% of the screen) so diagrams and
+    // figures are readable; the answer area below stays compact.
+    final imageMaxHeight = (MediaQuery.of(context).size.height * 0.42).clamp(220.0, 460.0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _QuestionMeta(ready: ready),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         if (question.imageUrl != null) ...[
-          ExamImage(imageUrl: question.imageUrl),
-          const SizedBox(height: 16),
+          ExamImage(
+            imageUrl: question.imageUrl,
+            maxHeight: imageMaxHeight,
+            enlargeable: true,
+          ),
+          const SizedBox(height: 14),
         ],
         Directionality(
           textDirection: _directionFor(question.text),
           child: Text(
             question.text,
-            style: Theme.of(context).textTheme.titleLarge,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  height: 1.3,
+                ),
           ),
         ),
-        const SizedBox(height: 16),
-        TawRadioGroup<String>(
-          groupValue: ready.answers[question.id],
-          onChanged: _selectAnswer(context, ready),
-          child: Column(
-            children: question.options
-                .map(
-                  (option) => _ChoiceTile(
-                    isLocked: ready.isLocked,
-                    optionId: option.id,
-                    text: option.text,
-                    imageUrl: option.imageUrl,
-                  ),
-                )
-                .toList(growable: false),
-          ),
-        ),
+        const SizedBox(height: 14),
+        ...List.generate(question.options.length, (index) {
+          final option = question.options[index];
+          return _ChoiceTile(
+            index: index,
+            text: option.text,
+            imageUrl: option.imageUrl,
+            isSelected: selected == option.id,
+            isLocked: ready.isLocked,
+            onTap: () => context.read<ExamCubit>().selectAnswer(option.id),
+          );
+        }),
       ],
     );
-  }
-
-  ValueChanged<String?> _selectAnswer(BuildContext context, ExamReady ready) {
-    return (value) {
-      if (value != null && !ready.isLocked) {
-        context.read<ExamCubit>().selectAnswer(value);
-      }
-    };
   }
 
   TextDirection _directionFor(String text) {
@@ -168,40 +166,102 @@ class _QuestionMeta extends StatelessWidget {
   }
 }
 
+/// Compact, app-style answer option: a tappable rounded tile with an
+/// \u0623/\u0628/\u062C/\u062F badge and a clear selected state. Lighter and denser than the
+/// default RadioListTile so more options fit without scrolling.
 class _ChoiceTile extends StatelessWidget {
   const _ChoiceTile({
-    required this.isLocked,
-    required this.optionId,
+    required this.index,
     required this.text,
+    required this.isSelected,
+    required this.isLocked,
+    required this.onTap,
     this.imageUrl,
   });
 
-  final bool isLocked;
-  final String optionId;
+  final int index;
   final String text;
   final String? imageUrl;
+  final bool isSelected;
+  final bool isLocked;
+  final VoidCallback onTap;
+
+  static const _letters = ['\u0623', '\u0628', '\u062C', '\u062F', '\u0647\u0640', '\u0648'];
 
   @override
   Widget build(BuildContext context) {
-    final group = TawRadioGroup.of<String>(context);
-    return RadioListTile<String>(
-      value: optionId,
-      groupValue: group.groupValue,
-      onChanged: isLocked ? null : group.onChanged,
-      enabled: !isLocked,
-      title: Directionality(
-        textDirection: _directionFor(text),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (imageUrl != null) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8, top: 4),
-                child: ExamImage(imageUrl: imageUrl, maxHeight: 140),
+    final scheme = Theme.of(context).colorScheme;
+    final accent = scheme.primary;
+    final letter = index < _letters.length ? _letters[index] : '${index + 1}';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: isSelected ? accent.withValues(alpha: 0.10) : scheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: isLocked ? null : onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected ? accent : Colors.grey.shade300,
+                width: isSelected ? 1.6 : 1,
               ),
-            ],
-            Text(text),
-          ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected ? accent : Colors.grey.shade200,
+                  ),
+                  child: Text(
+                    letter,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isSelected ? Colors.white : Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (imageUrl != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6, top: 2),
+                          child: ExamImage(
+                            imageUrl: imageUrl,
+                            maxHeight: 120,
+                            enlargeable: true,
+                          ),
+                        ),
+                      if (text.isNotEmpty)
+                        Directionality(
+                          textDirection: _directionFor(text),
+                          child: Text(
+                            text,
+                            style: const TextStyle(fontSize: 15, height: 1.25),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (isSelected)
+                  Icon(Icons.check_circle, color: accent, size: 22),
+              ],
+            ),
+          ),
         ),
       ),
     );

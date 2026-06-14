@@ -345,6 +345,11 @@ class _StudentHomePageState extends State<StudentHomePage> {
   Widget _buildPastExamTile(Map<String, dynamic> exam) {
     final name = exam['subjectNameAr'] ?? exam['subjectNameEn'] ?? '';
     final score = exam['score'];
+    // resultVisible is false when the admin/teacher hasn't released results yet;
+    // the backend already withholds the score in that case (score == null).
+    final resultVisible = exam['resultVisible'] as bool? ?? (score != null);
+    final hasScore = score != null;
+    final passed = hasScore && score >= 50;
     final submittedAt = exam['submittedAt'] != null ? DateTime.tryParse(exam['submittedAt'] as String) : null;
     final dateStr = submittedAt != null ? DateFormat('yyyy/MM/dd').format(_toGaza(submittedAt)) : '';
 
@@ -352,20 +357,25 @@ class _StudentHomePageState extends State<StudentHomePage> {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: score != null && score >= 50 ? Colors.green.shade100 : Colors.red.shade100,
+          backgroundColor: hasScore
+              ? (passed ? Colors.green.shade100 : Colors.red.shade100)
+              : Colors.grey.shade200,
           child: Icon(
-            score != null && score >= 50 ? Icons.check : Icons.close,
-            color: score != null && score >= 50 ? Colors.green : Colors.red,
+            hasScore ? (passed ? Icons.check : Icons.close) : Icons.hourglass_empty,
+            color: hasScore ? (passed ? Colors.green : Colors.red) : Colors.grey.shade600,
           ),
         ),
         title: Text(name),
         subtitle: Text(dateStr),
-        trailing: score != null
+        trailing: hasScore
             ? Text('$score%', style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: score >= 50 ? Colors.green : Colors.red,
+                color: passed ? Colors.green : Colors.red,
               ))
-            : const Text('بانتظار النتيجة', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            : Text(
+                resultVisible ? 'بانتظار النتيجة' : 'لم تُعتمد النتيجة بعد',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
       ),
     );
   }
