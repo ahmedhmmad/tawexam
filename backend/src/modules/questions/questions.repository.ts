@@ -35,6 +35,15 @@ export class QuestionsRepository {
     });
   }
 
+  /** Highest orderIndex currently used in the exam (0 if it has no questions). */
+  async getMaxOrderIndex(examId: string): Promise<number> {
+    const result = await prisma.question.aggregate({
+      where: { examId },
+      _max: { orderIndex: true }
+    });
+    return result._max.orderIndex ?? 0;
+  }
+
   create(examId: string, data: QuestionInput) {
     return prisma.question.create({
       data: {

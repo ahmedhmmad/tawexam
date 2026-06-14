@@ -131,10 +131,26 @@ export class QuestionsService {
       });
     }
 
+    // Assign collision-free orderIndex values. The Excel's question_order only
+    // expresses intended ordering — it must NOT be used as the DB orderIndex,
+    // or appending a second batch (or re-importing) collides with existing
+    // questions on the unique (examId, orderIndex) constraint. Sort by the
+    // file's order, then number sequentially: replace starts fresh (table is
+    // cleared first); append continues after the exam's current max.
+    prepared.sort((a, b) => a.orderIndex - b.orderIndex);
+    const base = mode === "replace" ? 0 : await this.repository.getMaxOrderIndex(examId);
+    prepared.forEach((question, index) => {
+      question.orderIndex = base + index + 1;
+    });
+
     if (mode === "replace") {
       await this.repository.replaceForExam(examId, prepared);
     } else {
-      await Promise.all(prepared.map((row) => this.repository.create(examId, row)));
+      // Sequential (not parallel) so ordering is deterministic and we don't
+      // race on the unique constraint.
+      for (const row of prepared) {
+        await this.repository.create(examId, row);
+      }
     }
 
     return {
