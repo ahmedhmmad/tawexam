@@ -59,10 +59,9 @@ void main() {
   });
 
   test('prevents double run', () async {
-    when(() => connectivity.isOnline).thenAnswer((_) async => true);
     when(() => queue.pendingTasks()).thenAnswer((_) async => []);
 
-    await service.start();
+    // Two concurrent drains: the second is guarded out by _isRunning.
     final f1 = service.syncPending();
     final f2 = service.syncPending();
     await Future.wait([f1, f2]);
@@ -81,13 +80,15 @@ void main() {
     final sub = service.status.listen(statuses.add);
 
     await service.syncPending();
+    // Let broadcast-stream events flush before asserting.
+    await Future<void>.delayed(const Duration(milliseconds: 10));
 
     await sub.cancel();
     verify(() => queue.replace(any())).called(1);
     expect(statuses, contains(SyncStatus.offline));
   });
 
-  test('emits SyncStatus.failed at maxAttempts', () async {
+  test('drops a non-critical task after maxAttempts instead of blocking', () async {
     final maxedTask = SyncTask(
       id: 't_max',
       endpoint: '/answers',
@@ -96,17 +97,48 @@ void main() {
       attempts: 4,
     );
 
-    when(() => queue.pendingTasks())
-        .thenAnswer((_) async => [maxedTask]);
+    when(() => queue.pendingTasks()).thenAnswer((_) async => [maxedTask]);
     when(() => dio.post<dynamic>(any(), data: any(named: 'data')))
         .thenThrow(DioException(requestOptions: RequestOptions()));
-
-    final statuses = <SyncStatus>[];
-    final sub = service.status.listen(statuses.add);
+    when(() => queue.remove(any())).thenAnswer((_) async {});
 
     await service.syncPending();
 
-    await sub.cancel();
-    expect(statuses, contains(SyncStatus.failed));
+    // At the cap it's removed (not left to block the queue forever).
+    verify(() => queue.remove('t_max')).called(1);
+  });
+
+  test('a permanently-rejected answer is dropped and the submit still runs', () async {
+    final poisonAnswer = SyncTask(
+      id: 'ans_bad',
+      endpoint: '/answers',
+      payload: {'questionId': 'deleted'},
+      createdAt: DateTime.now(),
+    );
+    final submit = SyncTask(
+      id: 'submit_1',
+      endpoint: '/exam/e1/submit',
+      payload: {'sessionId': 's1', 'answers': {}},
+      createdAt: DateTime.now(),
+    );
+
+    when(() => queue.pendingTasks()).thenAnswer((_) async => [poisonAnswer, submit]);
+    when(() => queue.remove(any())).thenAnswer((_) async {});
+    // Answer endpoint 4xx (e.g. FK on a deleted question); submit succeeds.
+    when(() => dio.post<dynamic>('/answers', data: any(named: 'data'))).thenThrow(
+      DioException(
+        requestOptions: RequestOptions(),
+        response: Response(requestOptions: RequestOptions(), statusCode: 400),
+      ),
+    );
+    when(() => dio.post<dynamic>('/exam/e1/submit', data: any(named: 'data')))
+        .thenAnswer((_) async => Response(requestOptions: RequestOptions(), statusCode: 200));
+
+    await service.syncPending();
+
+    // Poison answer dropped, and crucially the submit was still sent + cleared.
+    verify(() => queue.remove('ans_bad')).called(1);
+    verify(() => dio.post<dynamic>('/exam/e1/submit', data: any(named: 'data'))).called(1);
+    verify(() => queue.remove('submit_1')).called(1);
   });
 }

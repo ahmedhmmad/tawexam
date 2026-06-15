@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' show pow;
 
 import 'package:dio/dio.dart';
 
@@ -56,39 +55,52 @@ class SyncService {
     await _status.close();
   }
 
+  /// Drains every task in order. Crucially, one failing task must NOT block the
+  /// rest of the queue — a poison answer (e.g. for a question the admin later
+  /// deleted) used to stall the queue forever and prevent the final exam submit
+  /// from ever reaching the server, leaving the session stuck IN_PROGRESS.
   Future<void> _drainQueue() async {
+    var allCleared = true;
     for (final task in await _queue.pendingTasks()) {
-      final didSync = await _syncTask(task);
-      if (!didSync) return;
+      final outcome = await _syncTask(task);
+      // Keep going on every outcome; only "transient" leaves work pending.
+      if (outcome == _SyncOutcome.transient) allCleared = false;
     }
-    _status.add(SyncStatus.synced);
+    _status.add(allCleared ? SyncStatus.synced : SyncStatus.offline);
   }
 
-  Future<bool> _syncTask(SyncTask task) async {
+  Future<_SyncOutcome> _syncTask(SyncTask task) async {
     try {
       await _dio.post<dynamic>(task.endpoint, data: task.payload);
       await _queue.remove(task.id);
-      return true;
-    } on DioException {
-      await _handleFailedTask(task);
-      return false;
-    }
-  }
+      return _SyncOutcome.success;
+    } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      final isSubmit = task.endpoint.contains('/submit');
 
-  Future<void> _handleFailedTask(SyncTask task) async {
-    final attempts = task.attempts + 1;
-    if (attempts >= SyncConstants.maxAttempts) {
-      _status.add(SyncStatus.failed);
-      return;
-    }
-    await _queue.replace(task.copyWith(attempts: attempts));
-    _status.add(SyncStatus.offline);
-    await Future<void>.delayed(_retryDelay(attempts));
-  }
+      // A 4xx (except throttling/timeout) means the request will never succeed
+      // — e.g. answer for a deleted question (FK), or validation. Drop it so it
+      // can't block the queue. The final submit carries all answers anyway.
+      final permanent =
+          status != null && status >= 400 && status < 500 && status != 408 && status != 429;
+      if (permanent && !isSubmit) {
+        await _queue.remove(task.id);
+        return _SyncOutcome.dropped;
+      }
 
-  Duration _retryDelay(int attempts) {
-    final multiplier = pow(2, attempts).toInt();
-    return SyncConstants.retryBaseDelay * multiplier;
+      // Transient (offline / 5xx / timeout / throttled). Count attempts and
+      // give up on non-critical answer tasks after the cap; the submit task is
+      // never dropped — grading the exam matters more than queue tidiness.
+      final attempts = task.attempts + 1;
+      if (!isSubmit && attempts >= SyncConstants.maxAttempts) {
+        await _queue.remove(task.id);
+        return _SyncOutcome.dropped;
+      }
+      await _queue.replace(task.copyWith(attempts: attempts));
+      return _SyncOutcome.transient;
+    } catch (_) {
+      return _SyncOutcome.transient;
+    }
   }
 
   void _handleConnectivity(bool isOnline) {
@@ -98,4 +110,15 @@ class SyncService {
       _status.add(SyncStatus.offline);
     }
   }
+}
+
+enum _SyncOutcome {
+  /// Sent and removed from the queue.
+  success,
+
+  /// Permanently rejected (or gave up) and removed — does not block the queue.
+  dropped,
+
+  /// Temporary failure; kept for a later retry.
+  transient,
 }

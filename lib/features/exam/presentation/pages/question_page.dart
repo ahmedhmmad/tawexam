@@ -71,19 +71,157 @@ class _QuestionScaffold extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                   children: [
                     _QuestionBody(ready: ready, accent: accent),
-                    const SizedBox(height: 24),
-                    _QuestionNavigation(ready: ready, accent: accent),
-                    const SizedBox(height: 24),
-                    _PaletteSection(ready: ready),
                   ],
                 ),
               ),
             ),
           ),
         ],
+      ),
+      // Navigation pinned at the bottom so it's always reachable without
+      // scrolling past the answers — and the navigator (with all question
+      // numbers + unanswered filter) is one tap away regardless of count.
+      bottomNavigationBar: _BottomBar(ready: ready, accent: accent),
+    );
+  }
+}
+
+class _BottomBar extends StatelessWidget {
+  const _BottomBar({required this.ready, required this.accent});
+
+  final ExamReady ready;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLast = ready.currentIndex == ready.questions.length - 1;
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: ready.currentIndex == 0
+                    ? null
+                    : context.read<ExamCubit>().goToPreviousQuestion,
+                icon: const Icon(Icons.chevron_right, size: 20),
+                label: const Text('السابق'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: accent,
+                  side: BorderSide(color: accent.withValues(alpha: 0.5)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            _NavigatorButton(ready: ready, accent: accent),
+            const SizedBox(width: 8),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () => _next(context, isLast),
+                icon: Icon(isLast ? Icons.fact_check_outlined : Icons.chevron_left, size: 20),
+                label: Text(isLast ? 'المراجعة' : 'التالي'),
+                style: FilledButton.styleFrom(backgroundColor: accent),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _next(BuildContext context, bool isLast) {
+    if (isLast) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: context.read<ExamCubit>(),
+            child: const ReviewPage(),
+          ),
+        ),
+      );
+    } else {
+      context.read<ExamCubit>().goToNextQuestion();
+    }
+  }
+}
+
+/// Opens the question navigator (full grid + unanswered filter) as a sheet.
+class _NavigatorButton extends StatelessWidget {
+  const _NavigatorButton({required this.ready, required this.accent});
+
+  final ExamReady ready;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final answered = ready.answers.length;
+    final total = ready.questions.length;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _openSheet(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.grid_view_rounded, color: accent, size: 20),
+            const SizedBox(height: 2),
+            Text('$answered/$total', style: TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openSheet(BuildContext context) {
+    final cubit = context.read<ExamCubit>();
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          builder: (_, controller) => ListView(
+            controller: controller,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('التنقل بين الأسئلة',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              QuestionPalette(
+                totalQuestions: ready.questions.length,
+                currentIndex: ready.currentIndex,
+                answeredQuestionIds: ready.answers.keys.toSet(),
+                flaggedQuestionIds: ready.flagged,
+                questionIds: ready.questions.map((q) => q.id).toList(),
+                accent: accent,
+                withFilter: true,
+                onTap: (index) {
+                  cubit.goToQuestion(index);
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -237,7 +375,7 @@ class _ChoiceTile extends StatelessWidget {
           onTap: isLocked ? null : onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
@@ -249,8 +387,8 @@ class _ChoiceTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  width: 34,
-                  height: 34,
+                  width: 30,
+                  height: 30,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -260,7 +398,7 @@ class _ChoiceTile extends StatelessWidget {
                     letter,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 15,
+                      fontSize: 14,
                       color: isSelected ? Colors.white : Colors.grey.shade700,
                     ),
                   ),
@@ -285,7 +423,7 @@ class _ChoiceTile extends StatelessWidget {
                                 textDirection: _directionFor(trimmed),
                                 child: Text(
                                   trimmed,
-                                  style: const TextStyle(fontSize: 16, height: 1.3),
+                                  style: const TextStyle(fontSize: 15, height: 1.25),
                                 ),
                               ),
                           ],
@@ -313,72 +451,3 @@ class _ChoiceTile extends StatelessWidget {
   }
 }
 
-class _QuestionNavigation extends StatelessWidget {
-  const _QuestionNavigation({required this.ready, required this.accent});
-
-  final ExamReady ready;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final isLast = ready.currentIndex == ready.questions.length - 1;
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: ready.currentIndex == 0
-                ? null
-                : context.read<ExamCubit>().goToPreviousQuestion,
-            icon: const Icon(Icons.chevron_right, size: 20),
-            label: const Text('السابق'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: accent,
-              side: BorderSide(color: accent.withValues(alpha: 0.5)),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: FilledButton.icon(
-            onPressed: _nextAction(context),
-            icon: Icon(isLast ? Icons.fact_check_outlined : Icons.chevron_left, size: 20),
-            label: Text(isLast ? 'المراجعة' : 'التالي'),
-            style: FilledButton.styleFrom(backgroundColor: accent),
-          ),
-        ),
-      ],
-    );
-  }
-
-  VoidCallback _nextAction(BuildContext context) {
-    if (ready.currentIndex == ready.questions.length - 1) {
-      return () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => BlocProvider.value(
-            value: context.read<ExamCubit>(),
-            child: const ReviewPage(),
-          ),
-        ),
-      );
-    }
-    return context.read<ExamCubit>().goToNextQuestion;
-  }
-}
-
-class _PaletteSection extends StatelessWidget {
-  const _PaletteSection({required this.ready});
-
-  final ExamReady ready;
-
-  @override
-  Widget build(BuildContext context) {
-    return QuestionPalette(
-      totalQuestions: ready.questions.length,
-      currentIndex: ready.currentIndex,
-      answeredQuestionIds: ready.answers.keys.toSet(),
-      flaggedQuestionIds: ready.flagged,
-      questionIds: ready.questions.map((question) => question.id).toList(),
-      onTap: context.read<ExamCubit>().goToQuestion,
-    );
-  }
-}
