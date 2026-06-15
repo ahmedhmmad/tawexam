@@ -240,7 +240,7 @@ class _EventList extends StatelessWidget {
           child: ListView.separated(
             padding: const EdgeInsets.all(12),
             itemCount: events.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 6),
+            separatorBuilder: (_, _) => const SizedBox(height: 6),
             itemBuilder: (_, i) => _EventTile(event: events[i]),
           ),
         ),
@@ -265,7 +265,8 @@ class _EventTile extends StatelessWidget {
         leading: CircleAvatar(backgroundColor: color.shade50, child: Icon(icon, color: color.shade700, size: 20)),
         title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text([
-          if (event.studentId != null) 'طالب: ${event.studentId}',
+          if (event.studentLabel != null) 'طالب: ${event.studentLabel}',
+          if (event.examName != null) 'امتحان: ${event.examName}',
           if (event.description != null) event.description!,
           time,
         ].join('  •  '), style: const TextStyle(fontSize: 12)),

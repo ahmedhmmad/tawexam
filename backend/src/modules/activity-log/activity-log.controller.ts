@@ -72,6 +72,9 @@ export class ActivityLogController {
       rows.map((r) => ({
         createdAt: r.createdAt.toISOString(),
         eventType: r.eventType,
+        studentName: r.studentName,
+        seatNumber: r.seatNumber,
+        examName: r.examName,
         studentId: r.studentId,
         examId: r.examId,
         description: r.description,

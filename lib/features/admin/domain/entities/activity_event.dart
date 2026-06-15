@@ -7,6 +7,9 @@ class ActivityEvent extends Equatable {
     required this.createdAt,
     this.studentId,
     this.examId,
+    this.studentName,
+    this.seatNumber,
+    this.examName,
     this.description,
     this.ipAddress,
     this.deviceIdentifier,
@@ -17,9 +20,18 @@ class ActivityEvent extends Equatable {
   final DateTime createdAt;
   final String? studentId;
   final String? examId;
+  final String? studentName;
+  final String? seatNumber;
+  final String? examName;
   final String? description;
   final String? ipAddress;
   final String? deviceIdentifier;
+
+  /// Display label for the student: "Name (seat)" → name → seat → raw id.
+  String? get studentLabel {
+    if (studentName != null && seatNumber != null) return '$studentName ($seatNumber)';
+    return studentName ?? seatNumber ?? studentId;
+  }
 
   factory ActivityEvent.fromJson(Map<String, dynamic> json) {
     return ActivityEvent(
@@ -28,6 +40,9 @@ class ActivityEvent extends Equatable {
       createdAt: DateTime.tryParse('${json['createdAt']}') ?? DateTime.now(),
       studentId: _opt(json['studentId']),
       examId: _opt(json['examId']),
+      studentName: _opt(json['studentName']),
+      seatNumber: _opt(json['seatNumber']),
+      examName: _opt(json['examName']),
       description: _opt(json['description']),
       ipAddress: _opt(json['ipAddress']),
       deviceIdentifier: _opt(json['deviceIdentifier']),

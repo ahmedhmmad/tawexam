@@ -46,12 +46,49 @@ export class ActivityLogService {
       });
   }
 
-  query(filter: ActivityFilter, page: number, limit: number) {
-    return this.repository.query(filter, page, limit);
+  async query(filter: ActivityFilter, page: number, limit: number) {
+    const result = await this.repository.query(filter, page, limit);
+    return { ...result, rows: await this.enrich(result.rows) };
   }
 
-  listForExport(filter: ActivityFilter) {
-    return this.repository.listForExport(filter);
+  async listForExport(filter: ActivityFilter) {
+    return this.enrich(await this.repository.listForExport(filter));
+  }
+
+  /**
+   * Activity rows store only ids (no FK joins). Attach human-readable student
+   * name / seat number and exam name via a single batched lookup each.
+   */
+  private async enrich<T extends { studentId: string | null; examId: string | null }>(
+    rows: T[]
+  ): Promise<Array<T & { studentName: string | null; seatNumber: string | null; examName: string | null }>> {
+    const studentIds = [...new Set(rows.map((r) => r.studentId).filter((v): v is string => !!v))];
+    const examIds = [...new Set(rows.map((r) => r.examId).filter((v): v is string => !!v))];
+
+    const [students, exams] = await Promise.all([
+      studentIds.length
+        ? prisma.student.findMany({
+            where: { id: { in: studentIds } },
+            select: { id: true, fullName: true, seatNumber: true }
+          })
+        : Promise.resolve([]),
+      examIds.length
+        ? prisma.exam.findMany({
+            where: { id: { in: examIds } },
+            select: { id: true, subjectNameAr: true }
+          })
+        : Promise.resolve([])
+    ]);
+
+    const studentMap = new Map(students.map((s) => [s.id, s]));
+    const examMap = new Map(exams.map((e) => [e.id, e]));
+
+    return rows.map((r) => ({
+      ...r,
+      studentName: r.studentId ? studentMap.get(r.studentId)?.fullName ?? null : null,
+      seatNumber: r.studentId ? studentMap.get(r.studentId)?.seatNumber ?? null : null,
+      examName: r.examId ? examMap.get(r.examId)?.subjectNameAr ?? null : null
+    }));
   }
 
   deleteMany(filter: ActivityFilter) {
