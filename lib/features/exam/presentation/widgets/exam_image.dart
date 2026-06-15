@@ -7,30 +7,38 @@ import '../../../../core/constants/api_config.dart';
 /// Renders nothing when [imageUrl] is null/empty; shows a quiet broken-image
 /// placeholder when the file can't be loaded so the exam stays usable.
 ///
-/// When [enlargeable] is true, tapping opens a full-screen pinch-to-zoom
-/// viewer — used for the main question image so small diagrams/text stay
-/// readable without bloating the question layout.
+/// When [enlargeable] is true the image opens a full-screen pinch-zoom viewer
+/// on tap. The zoom affordance is shown as a caption *below* the image (when
+/// [showZoomHint] is true) so it never overlaps the image content.
 class ExamImage extends StatelessWidget {
   const ExamImage({
     super.key,
     required this.imageUrl,
     this.maxHeight = 240,
-    this.borderRadius = 12,
+    this.borderRadius = 14,
     this.enlargeable = false,
+    this.showZoomHint = false,
   });
 
   final String? imageUrl;
   final double maxHeight;
   final double borderRadius;
   final bool enlargeable;
+  final bool showZoomHint;
 
   @override
   Widget build(BuildContext context) {
     final resolved = ApiConfig.resolveMediaUrl(imageUrl);
     if (resolved == null) return const SizedBox.shrink();
 
-    final image = ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
+    final framed = Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: CachedNetworkImage(
@@ -40,7 +48,7 @@ class ExamImage extends StatelessWidget {
           placeholder: (context, url) => Container(
             height: 120,
             alignment: Alignment.center,
-            color: Colors.grey.shade100,
+            color: Colors.grey.shade50,
             child: const SizedBox.square(
               dimension: 24,
               child: CircularProgressIndicator(strokeWidth: 2),
@@ -49,42 +57,43 @@ class ExamImage extends StatelessWidget {
           errorWidget: (context, url, error) => Container(
             height: 80,
             alignment: Alignment.center,
-            color: Colors.grey.shade100,
-            child: Icon(
-              Icons.broken_image_outlined,
-              color: Colors.grey.shade400,
-              size: 32,
-            ),
+            color: Colors.grey.shade50,
+            child: Icon(Icons.broken_image_outlined, color: Colors.grey.shade400, size: 32),
           ),
         ),
       ),
     );
 
-    if (!enlargeable) return image;
+    if (!enlargeable) return framed;
 
-    return Stack(
+    final tappable = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(borderRadius),
+        onTap: () => _openFullScreen(context, resolved),
+        child: framed,
+      ),
+    );
+
+    if (!showZoomHint) return tappable;
+
+    // Caption below the image — keeps the zoom hint off the image content.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(borderRadius),
-            onTap: () => _openFullScreen(context, resolved),
-            child: image,
-          ),
-        ),
-        // Subtle "tap to enlarge" affordance.
-        Positioned(
-          top: 8,
-          left: 8,
-          child: IgnorePointer(
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.45),
-                borderRadius: BorderRadius.circular(8),
+        tappable,
+        const SizedBox(height: 6),
+        Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.zoom_out_map, size: 14, color: Colors.grey.shade500),
+              const SizedBox(width: 4),
+              Text(
+                'اضغط على الصورة للتكبير',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
               ),
-              child: const Icon(Icons.zoom_out_map, color: Colors.white, size: 18),
-            ),
+            ],
           ),
         ),
       ],
@@ -122,19 +131,20 @@ class _FullScreenImage extends StatelessWidget {
               minScale: 1,
               maxScale: 5,
               child: Center(
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.contain,
-                ),
+                child: CachedNetworkImage(imageUrl: imageUrl, fit: BoxFit.contain),
               ),
             ),
           ),
           Positioned(
             top: MediaQuery.of(context).padding.top + 8,
             right: 8,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white, size: 28),
-              onPressed: () => Navigator.of(context).pop(),
+            child: Material(
+              color: Colors.black54,
+              shape: const CircleBorder(),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 26),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
             ),
           ),
         ],

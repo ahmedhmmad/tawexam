@@ -232,7 +232,12 @@ class _StudentHomePageState extends State<StudentHomePage> {
       ]);
     }
 
-    return ListView(
+    // Cap width and center so the layout reads well on tablet/desktop/web.
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
         if (_allExams.isNotEmpty)
@@ -249,6 +254,8 @@ class _StudentHomePageState extends State<StudentHomePage> {
           ..._pastExams.map(_buildPastExamTile),
         ],
       ],
+        ),
+      ),
     );
   }
 
