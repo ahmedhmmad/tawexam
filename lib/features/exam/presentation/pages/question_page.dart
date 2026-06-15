@@ -7,30 +7,87 @@ import '../cubit/exam_state.dart';
 import '../widgets/exam_header.dart';
 import '../widgets/exam_image.dart';
 import '../widgets/question_palette.dart';
+import 'result_page.dart';
 import 'review_page.dart';
 
-class QuestionPage extends StatelessWidget {
+class QuestionPage extends StatefulWidget {
   const QuestionPage({super.key});
+
+  @override
+  State<QuestionPage> createState() => _QuestionPageState();
+}
+
+class _QuestionPageState extends State<QuestionPage> {
+  // True once the student confirmed leaving — used so the leave-submit (and not
+  // the normal review→submit flow) is the one that navigates to the result.
+  bool _leaving = false;
+  ExamReady? _lastReady;
 
   @override
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: BlocConsumer<ExamCubit, ExamState>(
-        listener: _listenToState,
-        builder: (context, state) {
-          final ready = _readyFrom(state);
-          if (ready == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-          if (ready.questions.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('الامتحان')),
-              body: const Center(child: Text('لا توجد أسئلة في هذا الامتحان', style: TextStyle(fontSize: 18))),
-            );
-          }
-          return _QuestionScaffold(ready: ready);
+      // Block the back gesture/button: leaving the exam must be deliberate and
+      // forfeits the attempt (auto-submit), so a single-attempt student can't
+      // wander out and back in with a reset view.
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _confirmLeave();
         },
+        child: BlocConsumer<ExamCubit, ExamState>(
+          listener: _listenToState,
+          builder: (context, state) {
+            final ready = _readyFrom(state);
+            if (ready != null) _lastReady = ready;
+            if (ready == null) {
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            }
+            if (ready.questions.isEmpty) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('الامتحان')),
+                body: const Center(
+                    child: Text('لا توجد أسئلة في هذا الامتحان', style: TextStyle(fontSize: 18))),
+              );
+            }
+            return _QuestionScaffold(ready: ready);
+          },
+        ),
       ),
     );
+  }
+
+  Future<void> _confirmLeave() async {
+    if (_leaving) return;
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          icon: Icon(Icons.warning_amber_rounded, color: Colors.red.shade400, size: 36),
+          title: const Text('مغادرة الامتحان؟'),
+          content: const Text(
+            'إذا غادرت الآن سيتم تسليم إجاباتك الحالية، ولن تتمكن من العودة إلى هذا الامتحان.',
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('البقاء في الامتحان'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('مغادرة وتسليم'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (leave == true && mounted) {
+      setState(() => _leaving = true);
+      await context.read<ExamCubit>().submitExam();
+    }
   }
 
   void _listenToState(BuildContext context, ExamState state) {
@@ -38,6 +95,24 @@ class QuestionPage extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('انتهى الوقت، سيتم تسليم الامتحان.')),
       );
+    }
+    // The leave-submit succeeded → go straight to the result screen.
+    if (state is ExamSubmitted && _leaving) {
+      final student = _lastReady?.student;
+      if (student == null) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: context.read<ExamCubit>(),
+            child: ResultPage(result: state.result, student: student),
+          ),
+        ),
+        (_) => false,
+      );
+    }
+    if (state is ExamError && _leaving) {
+      setState(() => _leaving = false); // let them stay / try again
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
     }
   }
 

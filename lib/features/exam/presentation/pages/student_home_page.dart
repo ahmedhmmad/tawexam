@@ -182,6 +182,11 @@ class _StudentHomePageState extends State<StudentHomePage> {
                       ),
                     ),
                     IconButton(
+                      icon: const Icon(Icons.support_agent, color: Colors.white),
+                      tooltip: 'تواصل مع الدعم',
+                      onPressed: _openSupport,
+                    ),
+                    IconButton(
                       icon: const Icon(Icons.logout, color: Colors.white),
                       tooltip: 'تسجيل الخروج',
                       onPressed: _logout,
@@ -210,6 +215,20 @@ class _StudentHomePageState extends State<StudentHomePage> {
       width: size,
       height: size,
       decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    );
+  }
+
+  void _openSupport() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => const Directionality(
+        textDirection: TextDirection.rtl,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 28),
+          child: ContactSupport(prompt: 'هل تحتاج مساعدة أو نسيت كلمة المرور؟'),
+        ),
+      ),
     );
   }
 
