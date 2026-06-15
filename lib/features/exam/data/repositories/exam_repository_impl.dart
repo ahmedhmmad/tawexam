@@ -139,6 +139,7 @@ class ExamRepositoryImpl implements ExamRepository {
     required String examId,
     required Map<String, String> answers,
     required DateTime submittedAt,
+    String reason = 'manual',
   }) async {
     try {
       final result = await _remoteDataSource.submitExam(
@@ -146,6 +147,7 @@ class ExamRepositoryImpl implements ExamRepository {
         examId: examId,
         answers: answers,
         submittedAt: submittedAt,
+        reason: reason,
       );
       await _localDataSource.markSessionSubmitted(sessionId);
       return Right(result);
@@ -153,7 +155,7 @@ class ExamRepositoryImpl implements ExamRepository {
       // Offline: lock the session locally BEFORE deferring the submit, so the
       // exam cannot be re-entered while the submission waits to sync.
       await _localDataSource.markSessionSubmitted(sessionId);
-      await _queueDeferredSubmit(sessionId, examId, answers, submittedAt);
+      await _queueDeferredSubmit(sessionId, examId, answers, submittedAt, reason);
       return _localResultOrFailure(sessionId, examId, error);
     } catch (error) {
       return Left(mapExceptionToFailure(error));
@@ -193,6 +195,7 @@ class ExamRepositoryImpl implements ExamRepository {
     String examId,
     Map<String, String> answers,
     DateTime submittedAt,
+    String reason,
   ) {
     return _syncService.enqueue(
       SyncTask(
@@ -202,6 +205,7 @@ class ExamRepositoryImpl implements ExamRepository {
           'sessionId': sessionId,
           'answers': answers,
           'submittedAt': submittedAt.toIso8601String(),
+          'reason': reason,
         },
         createdAt: submittedAt,
       ),

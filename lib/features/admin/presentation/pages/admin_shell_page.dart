@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../domain/entities/admin_role.dart';
+import '../cubit/activity_log_cubit.dart';
 import '../cubit/admin_auth_cubit.dart';
 import '../cubit/admin_auth_state.dart';
 import '../cubit/admin_users_cubit.dart';
@@ -11,6 +12,7 @@ import '../cubit/exam_manager_cubit.dart';
 import '../cubit/monitoring_cubit.dart';
 import '../cubit/results_cubit.dart';
 import '../cubit/student_manager_cubit.dart';
+import 'activity_log_page.dart';
 import 'admin_results_overview_page.dart';
 import 'admin_users_page.dart';
 import 'analytics_dashboard_page.dart';
@@ -82,6 +84,19 @@ final _allSections = <_Section>[
         BlocProvider(create: (_) => getIt<ResultsCubit>()),
       ],
       child: const AnalyticsDashboardContent(),
+    ),
+  ),
+  _Section(
+    icon: Icons.fact_check_outlined,
+    label: 'سجل النشاط',
+    // All admin roles can view; the backend scopes teachers to their exams.
+    roles: {AdminRole.superAdmin, AdminRole.admin, AdminRole.supervisor, AdminRole.teacher},
+    builder: (_) => MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => getIt<ExamManagerCubit>()..load()),
+        BlocProvider(create: (_) => getIt<ActivityLogCubit>()),
+      ],
+      child: const ActivityLogContent(),
     ),
   ),
   _Section(

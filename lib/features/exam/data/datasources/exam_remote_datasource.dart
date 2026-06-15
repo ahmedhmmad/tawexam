@@ -17,6 +17,7 @@ abstract interface class ExamRemoteDataSource {
     required String examId,
     required Map<String, String> answers,
     required DateTime submittedAt,
+    String reason,
   });
 }
 
@@ -55,6 +56,7 @@ class ExamRemoteDataSourceImpl implements ExamRemoteDataSource {
     required String examId,
     required Map<String, String> answers,
     required DateTime submittedAt,
+    String reason = 'manual',
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/exam/$examId/submit',
@@ -62,6 +64,7 @@ class ExamRemoteDataSourceImpl implements ExamRemoteDataSource {
         'sessionId': sessionId,
         'answers': answers,
         'submittedAt': submittedAt.toIso8601String(),
+        'reason': reason,
       },
     );
     return ExamResultModel.fromJson(response.data ?? const {});

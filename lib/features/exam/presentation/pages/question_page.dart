@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/activity/activity_reporter.dart';
 import '../../../../core/constants/branches.dart';
+import '../../../../core/di/service_locator.dart';
+import '../../../../core/network/connectivity_service.dart';
 import '../cubit/exam_cubit.dart';
 import '../cubit/exam_state.dart';
 import '../widgets/exam_header.dart';
@@ -17,11 +22,49 @@ class QuestionPage extends StatefulWidget {
   State<QuestionPage> createState() => _QuestionPageState();
 }
 
-class _QuestionPageState extends State<QuestionPage> {
+class _QuestionPageState extends State<QuestionPage> with WidgetsBindingObserver {
   // True once the student confirmed leaving — used so the leave-submit (and not
   // the normal review→submit flow) is the one that navigates to the result.
   bool _leaving = false;
   ExamReady? _lastReady;
+
+  final ActivityReporter _activity = getIt<ActivityReporter>();
+  StreamSubscription<bool>? _connSub;
+  bool _examOpenedReported = false;
+
+  String? get _examId => _lastReady?.exam.id;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Activity monitoring: app background/foreground + connectivity changes
+    // while the student is inside the exam.
+    _connSub = getIt<ConnectivityService>().onStatusChanged.listen((online) {
+      _activity.report(
+        online
+            ? ClientActivityEvent.internetRestored
+            : ClientActivityEvent.internetDisconnected,
+        examId: _examId,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _connSub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _activity.report(ClientActivityEvent.appBackgrounded, examId: _examId);
+    } else if (state == AppLifecycleState.resumed) {
+      _activity.report(ClientActivityEvent.appForegrounded, examId: _examId);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +82,13 @@ class _QuestionPageState extends State<QuestionPage> {
           listener: _listenToState,
           builder: (context, state) {
             final ready = _readyFrom(state);
-            if (ready != null) _lastReady = ready;
+            if (ready != null) {
+              _lastReady = ready;
+              if (!_examOpenedReported && ready.questions.isNotEmpty) {
+                _examOpenedReported = true;
+                _activity.report(ClientActivityEvent.examOpened, examId: ready.exam.id);
+              }
+            }
             if (ready == null) {
               return const Scaffold(body: Center(child: CircularProgressIndicator()));
             }
@@ -87,7 +136,7 @@ class _QuestionPageState extends State<QuestionPage> {
     );
     if (leave == true && mounted) {
       setState(() => _leaving = true);
-      await context.read<ExamCubit>().submitExam();
+      await context.read<ExamCubit>().submitExam(reason: 'leave');
     }
   }
 

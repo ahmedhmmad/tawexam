@@ -34,5 +34,6 @@ abstract interface class ExamRepository implements ExamSessionRepository {
     required String examId,
     required Map<String, String> answers,
     required DateTime submittedAt,
+    String reason,
   });
 }

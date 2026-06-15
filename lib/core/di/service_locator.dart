@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 
+import '../activity/activity_reporter.dart';
 import '../constants/api_config.dart';
 import '../network/api_client.dart';
 import '../network/auth_interceptor.dart';
@@ -16,6 +17,7 @@ import '../sync/sync_service.dart';
 import '../timer/countdown_service.dart';
 
 // Admin imports
+import '../../features/admin/data/datasources/activity_remote_datasource.dart';
 import '../../features/admin/data/datasources/admin_remote_datasource.dart';
 import '../../features/admin/data/datasources/admin_users_remote_datasource.dart';
 import '../../features/admin/data/datasources/monitoring_remote_datasource.dart';
@@ -34,6 +36,7 @@ import '../../features/admin/domain/usecases/import_students_usecase.dart';
 import '../../features/admin/domain/usecases/update_exam_usecase.dart';
 import '../../features/admin/domain/usecases/update_exam_status_usecase.dart';
 import '../../features/admin/domain/usecases/upload_questions_usecase.dart';
+import '../../features/admin/presentation/cubit/activity_log_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_auth_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_users_cubit.dart';
 import '../../features/admin/presentation/cubit/monitoring_cubit.dart';
@@ -96,6 +99,7 @@ Future<void> configureDependencies() async {
           AuthRepositoryImpl(remoteDataSource: getIt(), tokenProvider: getIt()),
     )
     ..registerLazySingleton(() => LoginUseCase(getIt()))
+    ..registerLazySingleton(() => ActivityReporter(getIt<ApiClient>().dio))
     ..registerFactory(() => AuthCubit(getIt()))
     ..registerLazySingleton<ExamRemoteDataSource>(
       () => ExamRemoteDataSourceImpl(getIt<ApiClient>().dio),
@@ -183,6 +187,10 @@ Future<void> configureDependencies() async {
       () => AdminUsersRemoteDataSourceImpl(getIt<ApiClient>().dio),
     )
     ..registerFactory(() => AdminUsersCubit(getIt()))
+    ..registerLazySingleton<ActivityRemoteDataSource>(
+      () => ActivityRemoteDataSourceImpl(getIt<ApiClient>().dio),
+    )
+    ..registerFactory(() => ActivityLogCubit(getIt()))
     ..registerFactory(() => MonitoringCubit(
           dataSource: getIt(),
           // New socket per cubit: connection lifecycle follows the page

@@ -4,6 +4,8 @@ import { AppError } from "../../utils/app-error.js";
 import { ResultsService } from "../results/results.service.js";
 import { SessionsService } from "../sessions/sessions.service.js";
 import { assertExamOwnership, isTeacher, type ExamActor } from "./exam-ownership.js";
+import { activityLogService } from "../activity-log/activity-log.service.js";
+import { ActivityEvent } from "../activity-log/activity-log.events.js";
 import { ExamsRepository } from "./exams.repository.js";
 
 export class ExamsService {
@@ -214,7 +216,7 @@ export class ExamsService {
     return this.repository.update(id, { status });
   }
 
-  async submitExam(examId: string, studentId: string, answers?: Record<string, string>) {
+  async submitExam(examId: string, studentId: string, answers?: Record<string, string>, reason?: string) {
     // Use the student's EXISTING session (don't create a new one or reject on
     // expiry). A deferred offline submission may arrive after the exam window
     // has closed — its answers must still be saved and graded, not lost.
@@ -235,6 +237,20 @@ export class ExamsService {
     }
 
     const result = await this.resultsService.gradeSession(session.id);
+
+    // Distinguish how the attempt ended for the activity log.
+    const event = reason === "timeout"
+        ? ActivityEvent.EXAM_AUTO_SUBMITTED
+        : reason === "leave"
+            ? ActivityEvent.EXAM_ABANDONED
+            : ActivityEvent.EXAM_SUBMITTED;
+    activityLogService.record({
+      eventType: event,
+      studentId,
+      examId,
+      description: "تم تسليم محاولة الامتحان",
+      metadata: { sessionId: session.id, reason: reason ?? "manual", score: result.score }
+    });
 
     // The submit response must obey the same visibility rules as the result
     // endpoint — otherwise it leaks the score when showResults is disabled.

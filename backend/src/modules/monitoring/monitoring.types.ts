@@ -12,5 +12,13 @@ export interface MonitoringEvents {
     sessionId: string;
     status: string;
   };
+  "activity:new": {
+    id: string;
+    eventType: string;
+    studentId: string | null;
+    examId: string | null;
+    description: string | null;
+    createdAt: string;
+  };
 }
 

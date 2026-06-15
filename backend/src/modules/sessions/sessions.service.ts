@@ -5,6 +5,8 @@ import { AppError } from "../../utils/app-error.js";
 import { monitoringService } from "../monitoring/monitoring.controller.js";
 import { ExamsRepository } from "../exams/exams.repository.js";
 import { ResultsService } from "../results/results.service.js";
+import { activityLogService } from "../activity-log/activity-log.service.js";
+import { ActivityEvent } from "../activity-log/activity-log.events.js";
 import { SessionsRepository } from "./sessions.repository.js";
 
 export class SessionsService {
@@ -17,6 +19,13 @@ export class SessionsService {
   async getOrCreateSession(examId: string, studentId: string) {
     const active = await this.repository.findActiveSession(studentId, examId);
     if (active) {
+      activityLogService.record({
+        eventType: ActivityEvent.SESSION_RESUMED,
+        studentId,
+        examId,
+        description: "استئناف جلسة امتحان قائمة",
+        metadata: { sessionId: active.id }
+      });
       return { ...active, serverTime: new Date() };
     }
 
@@ -27,6 +36,13 @@ export class SessionsService {
 
     const attempts = await this.repository.countAttempts(studentId, examId);
     if (attempts >= exam.maxAttempts) {
+      activityLogService.record({
+        eventType: ActivityEvent.ATTEMPT_EXHAUSTED,
+        studentId,
+        examId,
+        description: "محاولة بدء امتحان بعد استنفاد المحاولات",
+        metadata: { attempts, maxAttempts: exam.maxAttempts }
+      });
       throw new AppError("Maximum attempts reached", 400, "MAX_ATTEMPTS_REACHED");
     }
 
@@ -67,6 +83,13 @@ export class SessionsService {
       sessionId: session.id,
       examId: session.examId,
       studentId: session.studentId
+    });
+    activityLogService.record({
+      eventType: ActivityEvent.EXAM_STARTED,
+      studentId,
+      examId,
+      description: "بدء محاولة امتحان",
+      metadata: { sessionId: session.id, attemptNumber: session.attemptNumber }
     });
 
     return { ...session, serverTime: new Date() };

@@ -29,7 +29,8 @@ export class ExamsController {
 
   async submit(req: Request, res: Response): Promise<Response> {
     const answers = req.body?.answers as Record<string, string> | undefined;
-    const result = await examsService.submitExam(req.params.id as string, req.user!.id, answers);
+    const reason = req.body?.reason as string | undefined;
+    const result = await examsService.submitExam(req.params.id as string, req.user!.id, answers, reason);
     return sendSuccess(res, result, "Exam submitted");
   }
 

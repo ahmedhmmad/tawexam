@@ -13,6 +13,7 @@ import { setSocketServer } from "./config/socket.js";
 import { requestId } from "./middlewares/requestId.js";
 import { globalRateLimiter } from "./middlewares/rateLimiter.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
+import { adminActivityRouter, studentActivityRouter } from "./modules/activity-log/activity-log.router.js";
 import { adminUsersRouter } from "./modules/admin-users/admin-users.router.js";
 import { adminAuthRouter, studentAuthRouter } from "./modules/auth/auth.router.js";
 import { answersRouter } from "./modules/answers/answers.router.js";
@@ -84,7 +85,9 @@ app.use(`${env.API_PREFIX}/admin`, questionsRouter);
 app.use(`${env.API_PREFIX}/admin/exams`, adminResultsRouter);
 app.use(`${env.API_PREFIX}/admin`, adminSessionsRouter);
 app.use(`${env.API_PREFIX}/admin/monitoring`, monitoringRouter);
+app.use(`${env.API_PREFIX}/admin/activity`, adminActivityRouter);
 app.use(`${env.API_PREFIX}/admin/uploads`, uploadsRouter);
+app.use(`${env.API_PREFIX}/activity`, studentActivityRouter);
 
 app.use((_req, _res, next) => {
   next(new AppError("Route not found", 404, "ROUTE_NOT_FOUND"));

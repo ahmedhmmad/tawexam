@@ -174,3 +174,23 @@ model AuditLog {
   @@index([targetEntity, targetId])
 }
 
+/// Lightweight, event-based exam-activity monitoring (not proctoring).
+/// No FK relations on purpose: logs must survive entity deletion and never
+/// fail to write because a referenced row is missing (audit integrity).
+model ActivityLog {
+  id               String   @id @default(cuid())
+  userId           String?
+  studentId        String?
+  examId           String?
+  eventType        String
+  description      String?
+  metadata         Json     @default("{}")
+  ipAddress        String?
+  deviceIdentifier String?
+  createdAt        DateTime @default(now())
+
+  @@index([examId, createdAt])
+  @@index([studentId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([createdAt])
+}

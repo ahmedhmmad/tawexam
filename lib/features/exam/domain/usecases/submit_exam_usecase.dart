@@ -15,6 +15,7 @@ class SubmitExamUseCase {
       examId: params.examId,
       answers: params.answers,
       submittedAt: params.submittedAt,
+      reason: params.reason,
     );
   }
 }
@@ -25,10 +26,14 @@ class SubmitExamParams {
     required this.examId,
     required this.answers,
     required this.submittedAt,
+    this.reason = 'manual',
   });
 
   final String sessionId;
   final String examId;
   final Map<String, String> answers;
   final DateTime submittedAt;
+
+  /// How the attempt ended: 'manual' | 'timeout' | 'leave'.
+  final String reason;
 }

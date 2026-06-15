@@ -11,6 +11,8 @@ import {
 } from "../../config/jwt.js";
 import type { LoginResult } from "./auth.types.js";
 import { AuthRepository } from "./auth.repository.js";
+import { activityLogService } from "../activity-log/activity-log.service.js";
+import { ActivityEvent } from "../activity-log/activity-log.events.js";
 
 export class AuthService {
   constructor(private readonly repository: AuthRepository = new AuthRepository()) {}
@@ -25,6 +27,12 @@ export class AuthService {
     if (!valid) {
       throw new AppError("Invalid credentials", 401, "INVALID_CREDENTIALS");
     }
+
+    activityLogService.record({
+      eventType: ActivityEvent.STUDENT_LOGIN,
+      studentId: student.id,
+      description: `تسجيل دخول الطالب (${student.seatNumber})`
+    });
 
     return this.issueTokens({
       sub: student.id,
@@ -106,6 +114,13 @@ export class AuthService {
   async logout(refreshToken: string): Promise<void> {
     const payload = verifyRefreshToken(refreshToken);
     await redis.del(this.refreshKey(payload.jti ?? ""));
+    if (payload.subjectType === "student") {
+      activityLogService.record({
+        eventType: ActivityEvent.STUDENT_LOGOUT,
+        studentId: payload.sub,
+        description: "تسجيل خروج الطالب"
+      });
+    }
   }
 
   /** Current admin identity for restoring the session on app restart. */

@@ -121,7 +121,7 @@ class ExamCubit extends Cubit<ExamState> {
     goToQuestion((ready.currentIndex - 1).clamp(0, ready.questions.length - 1));
   }
 
-  Future<void> submitExam() async {
+  Future<void> submitExam({String reason = 'manual'}) async {
     final ready = _readyOrNull();
     if (ready == null) return;
     final locked = ready.copyWith(isLocked: true);
@@ -137,6 +137,7 @@ class ExamCubit extends Cubit<ExamState> {
           examId: ready.exam.id,
           answers: ready.answers,
           submittedAt: DateTime.now(),
+          reason: reason,
         ),
       );
 
@@ -259,7 +260,7 @@ class ExamCubit extends Cubit<ExamState> {
   void _expireExam(ExamReady ready) {
     final locked = ready.copyWith(remaining: Duration.zero, isLocked: true);
     emit(ExamTimerExpired(locked));
-    unawaited(submitExam());
+    unawaited(submitExam(reason: 'timeout'));
   }
 
   ExamReady? _readyOrNull() {
