@@ -7,12 +7,15 @@ import '../../../../core/di/service_locator.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/token_provider.dart';
 import '../../../../core/storage/local_storage_service.dart';
+import '../../../../core/widgets/contact_support.dart';
 import '../../../auth/domain/entities/student.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../data/models/exam_model.dart';
+import '../../data/models/exam_result_model.dart';
 import '../cubit/exam_cubit.dart';
 import 'instructions_page.dart';
+import 'result_page.dart';
 
 /// Gaza timezone offset (UTC+3)
 DateTime _toGaza(DateTime utc) => utc.toUtc().add(const Duration(hours: 3));
@@ -253,10 +256,44 @@ class _StudentHomePageState extends State<StudentHomePage> {
           const SizedBox(height: 8),
           ..._pastExams.map(_buildPastExamTile),
         ],
+        const SizedBox(height: 28),
+        const ContactSupport(),
+        const SizedBox(height: 8),
       ],
         ),
       ),
     );
+  }
+
+  /// Opens a past exam's result. Shows the score (and per-question answers when
+  /// the supervisor enabled "show answers"), or a notice if results aren't
+  /// released yet.
+  Future<void> _openPastResult(Map<String, dynamic> exam) async {
+    final examId = '${exam['examId'] ?? exam['id'] ?? ''}';
+    if (examId.isEmpty) return;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    try {
+      final r = await _dio.get<Map<String, dynamic>>('/exam/$examId/result');
+      final data = Map<String, dynamic>.from(r.data?['data'] as Map? ?? {});
+      final result = ExamResultModel.fromJson(data);
+      if (!mounted) return;
+      Navigator.of(context).pop(); // close the loader
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ResultPage(result: result, student: widget.student),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذّر تحميل النتيجة، حاول لاحقاً')),
+      );
+    }
   }
 
   Widget _buildNoExamCard() {
@@ -420,15 +457,22 @@ class _StudentHomePageState extends State<StudentHomePage> {
         ),
         title: Text(name),
         subtitle: Text(dateStr),
-        trailing: hasScore
-            ? Text('$score%', style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: passed ? Colors.green : Colors.red,
-              ))
-            : Text(
-                resultVisible ? 'بانتظار النتيجة' : 'لم تُعتمد النتيجة بعد',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
+        onTap: () => _openPastResult(exam),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            hasScore
+                ? Text('$score%', style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: passed ? Colors.green : Colors.red,
+                  ))
+                : Text(
+                    resultVisible ? 'بانتظار النتيجة' : 'لم تُعتمد النتيجة بعد',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+            Icon(Icons.chevron_left, color: Colors.grey.shade400),
+          ],
+        ),
       ),
     );
   }

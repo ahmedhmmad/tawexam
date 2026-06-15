@@ -84,10 +84,15 @@ export class ResultsService {
         return {
           questionId: question.id,
           questionText: question.text,
+          questionImageUrl: question.imageUrl,
           selectedAnswer: selectedChoice?.id ?? null,
           selectedAnswerText: selectedChoice?.text ?? null,
+          selectedAnswerLabel: selectedChoice?.label ?? null,
+          selectedAnswerImageUrl: selectedChoice?.imageUrl ?? null,
           correctAnswer: correctChoice?.id ?? null,
           correctAnswerText: correctChoice?.text ?? null,
+          correctAnswerLabel: correctChoice?.label ?? null,
+          correctAnswerImageUrl: correctChoice?.imageUrl ?? null,
           isCorrect: selectedChoice !== undefined && selectedChoice.id === correctChoice?.id,
           explanation: question.explanation
         };

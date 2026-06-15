@@ -93,6 +93,15 @@ export class SessionsService {
     return Math.min(exam.durationMinutes * 60 - elapsedSeconds, untilEndSeconds);
   }
 
+  /**
+   * The student's latest session for this exam, WITHOUT creating a new one or
+   * rejecting on expiry. Used by submit so a deferred offline submission can
+   * still be graded after the exam window has closed.
+   */
+  findLatestSession(examId: string, studentId: string) {
+    return this.repository.findByStudentAndExam(studentId, examId);
+  }
+
   async getStudentSession(examId: string, studentId: string) {
     const session = await this.repository.findByStudentAndExam(studentId, examId);
     // If no session exists, or the last session is not IN_PROGRESS (expired/submitted),

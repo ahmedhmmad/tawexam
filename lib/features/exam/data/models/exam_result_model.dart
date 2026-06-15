@@ -64,12 +64,15 @@ class ExamResultModel extends ExamResult {
       isCorrect:
           json['isCorrect'] as bool? ?? json['is_correct'] as bool? ?? false,
       questionText: _optional(json['questionText'] ?? json['question_text']),
+      questionImageUrl: _optional(json['questionImageUrl'] ?? json['question_image_url']),
       selectedAnswerText: _optional(
         json['selectedAnswerText'] ?? json['selected_answer_text'],
       ),
+      selectedAnswerLabel: _optional(json['selectedAnswerLabel']),
       correctAnswerText: _optional(
         json['correctAnswerText'] ?? json['correct_answer_text'],
       ),
+      correctAnswerLabel: _optional(json['correctAnswerLabel']),
       explanation: _optional(json['explanation']),
     );
   }

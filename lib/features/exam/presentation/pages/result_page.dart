@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../domain/entities/exam_result.dart';
 import '../cubit/exam_cubit.dart';
+import '../widgets/exam_image.dart';
 import '../../../auth/domain/entities/student.dart';
 import 'student_home_page.dart';
 
@@ -190,24 +191,24 @@ class _AnswerBreakdown extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '${entry.key + 1}. ${item.questionText ?? ''}',
+                          (item.questionText?.trim().isNotEmpty ?? false)
+                              ? '${entry.key + 1}. ${item.questionText}'
+                              : 'السؤال ${entry.key + 1}',
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    item.selectedAnswerText != null
-                        ? 'إجابتك: ${item.selectedAnswerText}'
-                        : 'لم تتم الإجابة',
-                    style: TextStyle(fontSize: 13, color: color.shade700),
-                  ),
-                  if (!item.isCorrect && item.correctAnswerText != null)
-                    Text(
-                      'الإجابة الصحيحة: ${item.correctAnswerText}',
-                      style: TextStyle(fontSize: 13, color: Colors.green.shade700),
-                    ),
+                  if (item.questionImageUrl != null) ...[
+                    const SizedBox(height: 8),
+                    ExamImage(imageUrl: item.questionImageUrl, maxHeight: 200, enlargeable: true),
+                  ],
+                  const SizedBox(height: 8),
+                  Text('إجابتك: ${_describe(item.selectedAnswerLabel, item.selectedAnswerText) ?? 'لم تتم الإجابة'}',
+                      style: TextStyle(fontSize: 14, color: color.shade700, fontWeight: FontWeight.w600)),
+                  if (!item.isCorrect)
+                    Text('الإجابة الصحيحة: ${_describe(item.correctAnswerLabel, item.correctAnswerText) ?? '-'}',
+                        style: TextStyle(fontSize: 14, color: Colors.green.shade700, fontWeight: FontWeight.w600)),
                   if (item.explanation != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
@@ -224,6 +225,16 @@ class _AnswerBreakdown extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Human-readable description of a chosen answer: "(أ) نص الخيار", or just the
+/// letter for image-only choices, or null when there's no answer.
+String? _describe(String? label, String? text) {
+  final hasLabel = label != null && label.trim().isNotEmpty;
+  final hasText = text != null && text.trim().isNotEmpty;
+  if (!hasLabel && !hasText) return null;
+  if (hasLabel && hasText) return '($label) $text';
+  return hasText ? text : '($label)';
 }
 
 class _SummaryRow extends StatelessWidget {

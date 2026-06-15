@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/widgets/contact_support.dart';
 import '../../../../main.dart' show cacheStudent;
 import '../../../exam/presentation/cubit/exam_cubit.dart';
 import '../../../exam/presentation/pages/student_home_page.dart';
@@ -145,7 +145,7 @@ class _LoginFields extends StatelessWidget {
         const SizedBox(height: 24),
         _LoginButton(isLoading: isLoading, onPressed: onSubmit),
         const SizedBox(height: 24),
-        const _ContactDeveloper(),
+        const ContactSupport(prompt: 'هل نسيت كلمة المرور أو تحتاج مساعدة؟'),
       ],
     );
   }
@@ -233,56 +233,6 @@ class _PasswordField extends StatelessWidget {
   static String? _validatePassword(String? value) {
     if ((value ?? '').isEmpty) return 'كلمة المرور مطلوبة';
     return null;
-  }
-}
-
-/// Password reset for students isn't available yet (no self-service flow), so
-/// instead of a dead "forgot password" link we point students to the developer
-/// for help — via WhatsApp or email.
-class _ContactDeveloper extends StatelessWidget {
-  const _ContactDeveloper();
-
-  static const _whatsappNumber = '972599742821';
-  static const _email = 'cs@megaserv.xyz';
-
-  Future<void> _open(Uri uri) async {
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      // No handler installed (e.g. WhatsApp not present) — silently ignore.
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          'هل نسيت كلمة المرور أو تحتاج مساعدة؟',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey.shade600,
-              ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            OutlinedButton.icon(
-              onPressed: () => _open(Uri.parse('https://wa.me/$_whatsappNumber')),
-              icon: const Icon(Icons.chat, size: 18, color: Color(0xFF25D366)),
-              label: const Text('واتساب'),
-            ),
-            const SizedBox(width: 12),
-            OutlinedButton.icon(
-              onPressed: () => _open(Uri(scheme: 'mailto', path: _email)),
-              icon: const Icon(Icons.email_outlined, size: 18),
-              label: const Text('البريد'),
-            ),
-          ],
-        ),
-      ],
-    );
   }
 }
 

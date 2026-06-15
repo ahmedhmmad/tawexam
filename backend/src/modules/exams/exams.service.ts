@@ -211,20 +211,26 @@ export class ExamsService {
   }
 
   async submitExam(examId: string, studentId: string, answers?: Record<string, string>) {
-    const session = await this.sessionsService.getStudentSession(examId, studentId);
-    const expiredSession = await this.sessionsService.expireIfNeeded(session.id);
+    // Use the student's EXISTING session (don't create a new one or reject on
+    // expiry). A deferred offline submission may arrive after the exam window
+    // has closed — its answers must still be saved and graded, not lost.
+    const session = await this.sessionsService.findLatestSession(examId, studentId);
+    if (!session) {
+      throw new AppError("No exam session to submit", 404, "SESSION_NOT_FOUND");
+    }
 
     // Save answers from client before grading (ensures answers aren't lost if sync failed)
     if (answers && Object.keys(answers).length > 0) {
       await this.repository.saveAnswersBatch(session.id, answers);
     }
 
-    const finalSession =
-      expiredSession.status === SessionStatus.IN_PROGRESS
-        ? await this.repository.updateSessionStatus(session.id, SessionStatus.SUBMITTED, new Date())
-        : expiredSession;
+    // Mark an active session submitted; an already-expired/submitted one is
+    // graded as-is (grading is idempotent).
+    if (session.status === SessionStatus.IN_PROGRESS) {
+      await this.repository.updateSessionStatus(session.id, SessionStatus.SUBMITTED, new Date());
+    }
 
-    const result = await this.resultsService.gradeSession(finalSession.id);
+    const result = await this.resultsService.gradeSession(session.id);
 
     // The submit response must obey the same visibility rules as the result
     // endpoint — otherwise it leaks the score when showResults is disabled.

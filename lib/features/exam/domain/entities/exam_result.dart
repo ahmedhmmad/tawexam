@@ -35,8 +35,11 @@ class QuestionResult extends Equatable {
     required this.correctAnswerId,
     required this.isCorrect,
     this.questionText,
+    this.questionImageUrl,
     this.selectedAnswerText,
+    this.selectedAnswerLabel,
     this.correctAnswerText,
+    this.correctAnswerLabel,
     this.explanation,
   });
 
@@ -45,8 +48,11 @@ class QuestionResult extends Equatable {
   final String correctAnswerId;
   final bool isCorrect;
   final String? questionText;
+  final String? questionImageUrl;
   final String? selectedAnswerText;
+  final String? selectedAnswerLabel;
   final String? correctAnswerText;
+  final String? correctAnswerLabel;
   final String? explanation;
 
   @override
@@ -57,8 +63,11 @@ class QuestionResult extends Equatable {
       correctAnswerId,
       isCorrect,
       questionText,
+      questionImageUrl,
       selectedAnswerText,
+      selectedAnswerLabel,
       correctAnswerText,
+      correctAnswerLabel,
       explanation,
     ];
   }

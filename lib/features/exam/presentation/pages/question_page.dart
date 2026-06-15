@@ -162,13 +162,15 @@ class _NavigatorButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final answered = ready.answers.length;
     final total = ready.questions.length;
+    // Show the CURRENT question position (updates as you navigate), not the
+    // answered count — that was being misread as the question number.
+    final current = ready.currentIndex + 1;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () => _openSheet(context),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: accent.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(12),
@@ -176,9 +178,16 @@ class _NavigatorButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.grid_view_rounded, color: accent, size: 20),
-            const SizedBox(height: 2),
-            Text('$answered/$total', style: TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.grid_view_rounded, color: accent, size: 16),
+                const SizedBox(width: 4),
+                Text('$current / $total',
+                    style: TextStyle(color: accent, fontSize: 15, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            Text('الأسئلة', style: TextStyle(color: accent, fontSize: 10)),
           ],
         ),
       ),
