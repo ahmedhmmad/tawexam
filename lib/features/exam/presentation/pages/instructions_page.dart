@@ -165,14 +165,17 @@ class _InstructionsContent extends StatelessWidget {
         ),
         const SizedBox(height: 32),
 
-        // Start button
-        FilledButton.icon(
-          onPressed: () => _startExam(context),
-          icon: const Icon(Icons.play_arrow),
-          label: const Text('بدء الامتحان', style: TextStyle(fontSize: 18)),
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        // Start button (full width — ListView doesn't stretch children)
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () => _startExam(context),
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('بدء الامتحان', style: TextStyle(fontSize: 18)),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
           ),
         ),
       ],

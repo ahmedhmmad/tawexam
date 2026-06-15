@@ -59,13 +59,16 @@ class _ReviewContent extends StatelessWidget {
             if (firstUnanswered != -1) ...[
               const SizedBox(height: 12),
               // One tap to jump back to the first question still unanswered.
-              OutlinedButton.icon(
-                onPressed: () => _jumpToQuestion(context, firstUnanswered),
-                icon: const Icon(Icons.arrow_back),
-                label: Text('انتقل لأول سؤال غير مجاب (${ready.unansweredCount})'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.orange.shade800,
-                  side: BorderSide(color: Colors.orange.shade300),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _jumpToQuestion(context, firstUnanswered),
+                  icon: const Icon(Icons.arrow_back),
+                  label: Text('انتقل لأول سؤال غير مجاب (${ready.unansweredCount})'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange.shade800,
+                    side: BorderSide(color: Colors.orange.shade300),
+                  ),
                 ),
               ),
             ],
@@ -81,18 +84,21 @@ class _ReviewContent extends StatelessWidget {
               onTap: (index) => _jumpToQuestion(context, index),
             ),
             const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => BlocProvider.value(
-                    value: context.read<ExamCubit>(),
-                    child: const SubmitConfirmationPage(),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => BlocProvider.value(
+                      value: context.read<ExamCubit>(),
+                      child: const SubmitConfirmationPage(),
+                    ),
                   ),
                 ),
+                icon: const Icon(Icons.send),
+                label: const Text('تسليم الامتحان'),
+                style: FilledButton.styleFrom(backgroundColor: accent),
               ),
-              icon: const Icon(Icons.send),
-              label: const Text('تسليم الامتحان'),
-              style: FilledButton.styleFrom(backgroundColor: accent),
             ),
           ],
         ),

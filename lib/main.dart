@@ -152,16 +152,21 @@ class TawExamApp extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
+      // NOTE: use a min HEIGHT only — Size.fromHeight() sets width to infinity,
+      // which forces every button to demand full width and breaks buttons
+      // placed in an unbounded Row (e.g. the WhatsApp/email contact buttons,
+      // which then overflow off-screen). Full-width buttons get their width
+      // from their parents (stretch columns / SizedBox(width: infinity)).
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(50),
+          minimumSize: const Size(64, 50),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(50),
+          minimumSize: const Size(64, 50),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
