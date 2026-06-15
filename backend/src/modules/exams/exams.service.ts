@@ -135,12 +135,12 @@ export class ExamsService {
 
     for (const exam of exams) {
       const attemptCount = await this.sessionsService.getAttemptCount(exam.id, studentId);
-      if (exam.status === 'ACTIVE' && attemptCount >= exam.maxAttempts) {
-        continue;
-      }
-      // Skip ACTIVE exams the student can no longer start: endAt passed, or
-      // their personal window (anchored to their first session) is used up
-      if (exam.status === 'ACTIVE') {
+      const attemptsExhausted = attemptCount >= exam.maxAttempts;
+
+      // Keep attempts-exhausted exams in the list (shown locked), but skip
+      // ACTIVE exams whose window has fully closed AND still have attempts left
+      // (those are genuinely just over / not yet startable).
+      if (exam.status === 'ACTIVE' && !attemptsExhausted) {
         const remaining = await this.sessionsService.getRemainingWindowSeconds(exam, studentId);
         if (remaining <= 0) {
           continue;
@@ -160,6 +160,10 @@ export class ExamsService {
         instructions: exam.instructions,
         maxAttempts: exam.maxAttempts,
         currentAttempt: attemptCount + 1,
+        attemptsUsed: attemptCount,
+        // Surfaced so the app can show a locked card instead of a start button.
+        attemptsExhausted,
+        canStart: exam.status === 'ACTIVE' && !attemptsExhausted,
         status: exam.status
       });
     }

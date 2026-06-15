@@ -57,6 +57,11 @@ export class SessionsRepository {
     return prisma.examSession.update({ where: { id }, data });
   }
 
+  /** Hard-deletes a session; answers and result cascade away. */
+  delete(id: string) {
+    return prisma.examSession.delete({ where: { id } });
+  }
+
   listByExam(examId: string) {
     return prisma.examSession.findMany({
       where: { examId },

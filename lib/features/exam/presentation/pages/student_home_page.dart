@@ -349,8 +349,19 @@ class _StudentHomePageState extends State<StudentHomePage> {
     final status = exam['status'] as String? ?? 'ACTIVE';
     final isScheduled = status == 'SCHEDULED';
     final isActive = status == 'ACTIVE';
-    // Can only start if ACTIVE
-    final canStart = isActive;
+    final attemptsExhausted = exam['attemptsExhausted'] == true;
+    // Backend is the source of truth for whether a new attempt can start.
+    final canStart = (exam['canStart'] as bool?) ?? (isActive && !attemptsExhausted);
+
+    // Visual tone: locked (exhausted) → grey, scheduled → blue, available → green.
+    final Color tone = attemptsExhausted
+        ? Colors.grey
+        : (isScheduled ? Colors.blue : Colors.green);
+    final (String badge, Color badgeBg, Color badgeFg) = attemptsExhausted
+        ? ('استنفدت المحاولات', Colors.grey.shade200, Colors.grey.shade700)
+        : isScheduled
+            ? ('مجدول', Colors.blue.shade50, Colors.blue.shade700)
+            : ('متاح الآن', Colors.green.shade50, Colors.green.shade700);
 
     return Card(
       elevation: 4,
@@ -365,12 +376,14 @@ class _StudentHomePageState extends State<StudentHomePage> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: (isScheduled ? Colors.blue : Colors.green).withValues(alpha: 0.1),
+                    color: tone.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    isScheduled ? Icons.schedule : Icons.assignment,
-                    color: isScheduled ? Colors.blue : Colors.green,
+                    attemptsExhausted
+                        ? Icons.lock_outline
+                        : (isScheduled ? Icons.schedule : Icons.assignment),
+                    color: attemptsExhausted ? Colors.grey.shade600 : tone,
                     size: 28,
                   ),
                 ),
@@ -384,13 +397,12 @@ class _StudentHomePageState extends State<StudentHomePage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: isScheduled ? Colors.blue.shade50 : Colors.green.shade50,
+                          color: badgeBg,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          isScheduled ? 'مجدول' : 'متاح الآن',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold,
-                            color: isScheduled ? Colors.blue.shade700 : Colors.green.shade700),
+                          badge,
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: badgeFg),
                         ),
                       ),
                       if (maxAttempts > 1)
@@ -439,12 +451,51 @@ class _StudentHomePageState extends State<StudentHomePage> {
               ),
             ],
             const SizedBox(height: 18),
-            _StartExamButton(
-              enabled: canStart,
-              color: _branchColor(widget.student.branch),
-              label: canStart ? 'بدء الامتحان' : 'الامتحان لم يبدأ بعد',
-              onPressed: canStart ? () => _startExamFlow(context, exam) : null,
-            ),
+            if (attemptsExhausted)
+              // Locked: exam stays visible but can't be opened/retaken. Offer
+              // the result instead (the result screen itself respects whether
+              // the supervisor released results).
+              Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.lock_outline, color: Colors.grey.shade600, size: 18),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'لقد استنفدت جميع محاولاتك لهذا الامتحان',
+                            style: TextStyle(fontSize: 13, color: Colors.grey.shade700, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.bar_chart, size: 18),
+                      label: const Text('عرض النتيجة'),
+                      onPressed: () => _openPastResult(exam),
+                    ),
+                  ),
+                ],
+              )
+            else
+              _StartExamButton(
+                enabled: canStart,
+                color: _branchColor(widget.student.branch),
+                label: canStart ? 'بدء الامتحان' : 'الامتحان لم يبدأ بعد',
+                onPressed: canStart ? () => _startExamFlow(context, exam) : null,
+              ),
           ],
         ),
       ),

@@ -65,9 +65,10 @@ class _QuestionPageState extends State<QuestionPage> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           icon: Icon(Icons.warning_amber_rounded, color: Colors.red.shade400, size: 36),
-          title: const Text('مغادرة الامتحان؟'),
+          title: const Text('إنهاء الامتحان والمغادرة؟'),
           content: const Text(
-            'إذا غادرت الآن سيتم تسليم إجاباتك الحالية، ولن تتمكن من العودة إلى هذا الامتحان.',
+            'سيتم إنهاء هذه المحاولة وتسليم إجاباتك الحالية فوراً.\n'
+            'قد لا تتمكن من إعادة الدخول حسب عدد المحاولات المسموحة.',
             textAlign: TextAlign.center,
           ),
           actions: [
@@ -93,13 +94,16 @@ class _QuestionPageState extends State<QuestionPage> {
   void _listenToState(BuildContext context, ExamState state) {
     if (state is ExamTimerExpired) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('انتهى الوقت، سيتم تسليم الامتحان.')),
+        const SnackBar(content: Text('انتهى الوقت، يتم تسليم إجاباتك.')),
       );
     }
-    // The leave-submit succeeded → go straight to the result screen.
-    if (state is ExamSubmitted && _leaving) {
+    // Go to the result when this screen finishes — covers both leaving and the
+    // timer reaching zero. The normal review→confirm flow navigates from its
+    // own page, so only act when this question screen is the top route.
+    if (state is ExamSubmitted) {
+      final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
       final student = _lastReady?.student;
-      if (student == null) return;
+      if (!isCurrent || student == null) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => BlocProvider.value(

@@ -4,12 +4,14 @@ import { redis } from "../../config/redis.js";
 import { AppError } from "../../utils/app-error.js";
 import { monitoringService } from "../monitoring/monitoring.controller.js";
 import { ExamsRepository } from "../exams/exams.repository.js";
+import { ResultsService } from "../results/results.service.js";
 import { SessionsRepository } from "./sessions.repository.js";
 
 export class SessionsService {
   constructor(
     private readonly repository: SessionsRepository = new SessionsRepository(),
-    private readonly examsRepository: ExamsRepository = new ExamsRepository()
+    private readonly examsRepository: ExamsRepository = new ExamsRepository(),
+    private readonly resultsService: ResultsService = new ResultsService()
   ) {}
 
   async getOrCreateSession(examId: string, studentId: string) {
@@ -136,11 +138,36 @@ export class SessionsService {
       remainingSeconds: 0
     });
     await redis.del(this.remainingKey(id));
+    // Grade whatever was saved so a forced/forfeited attempt has a result.
+    await this.resultsService.gradeSession(id);
     monitoringService.emitEvent("session:ended", {
       sessionId: id,
       status: SessionStatus.FORCE_ENDED
     });
     return updated;
+  }
+
+  /**
+   * Admin-only error recovery: permanently remove an attempt so it no longer
+   * counts against the student's attempt limit (lets them retake after an
+   * administrative mistake). Cascades to its answers and result. Not exposed
+   * to students. The caller is responsible for audit logging.
+   */
+  async invalidateAttempt(id: string) {
+    const session = await this.repository.findById(id);
+    if (!session) {
+      throw new AppError("Session not found", 404, "SESSION_NOT_FOUND");
+    }
+    await this.repository.delete(id);
+    await redis.del(this.remainingKey(id));
+    monitoringService.emitEvent("session:ended", { sessionId: id, status: "INVALIDATED" });
+    return {
+      sessionId: id,
+      studentId: session.studentId,
+      examId: session.examId,
+      attemptNumber: session.attemptNumber,
+      previousStatus: session.status
+    };
   }
 
   async listExamSessions(examId: string) {
