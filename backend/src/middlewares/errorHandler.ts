@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import jwt from "jsonwebtoken";
 import { ZodError } from "zod";
 
 import { logger } from "../config/logger.js";
@@ -20,6 +21,18 @@ export function errorHandler(
           path: issue.path.join("."),
           message: issue.message
         }))
+      }
+    });
+  }
+
+  // Expired/invalid JWTs (e.g. a stale refresh token) are a normal client
+  // condition, not a server fault — return 401 instead of a 500.
+  if (error instanceof jwt.JsonWebTokenError) {
+    return res.status(401).json({
+      success: false,
+      error: {
+        code: "INVALID_TOKEN",
+        message: "Token invalid or expired"
       }
     });
   }
