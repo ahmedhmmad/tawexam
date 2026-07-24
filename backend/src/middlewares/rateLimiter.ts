@@ -17,6 +17,9 @@ export const globalRateLimiter = rateLimit({
   limit: 100,
   standardHeaders: true,
   legacyHeaders: false,
+  // Fail open: a Redis outage (e.g. NOSCRIPT after a restart) must not 500
+  // every request — it should let traffic through untracked instead.
+  passOnStoreError: true,
   store: buildStore("rl:global:")
 });
 
@@ -25,6 +28,7 @@ export const studentLoginRateLimiter = rateLimit({
   limit: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  passOnStoreError: true,
   store: buildStore("rl:student-login:"),
   keyGenerator: (req: Request) => (req.body as { seatNumber?: string })?.seatNumber ?? req.ip ?? "unknown"
 });
@@ -34,5 +38,6 @@ export const adminLoginRateLimiter = rateLimit({
   limit: 3,
   standardHeaders: true,
   legacyHeaders: false,
+  passOnStoreError: true,
   store: buildStore("rl:admin-login:")
 });
